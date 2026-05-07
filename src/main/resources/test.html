@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+<button onclick="sendMessage()">메시지 보내기</button>
+
+<script>
+
+    const socket = new WebSocket("ws://localhost:8080/ws/interview");
+
+    socket.onopen = () => {
+        console.log("연결 성공");
+    };
+
+    socket.onmessage = (event) => {
+        console.log("서버 응답:", event.data);
+    };
+
+    socket.onerror = (error) => {
+        console.log("에러:", error);
+    };
+
+    socket.onclose = () => {
+        console.log("연결 종료");
+    };
+
+    function sendMessage() {
+        console.log("메시지 전송");
+        socket.send("hello");
+    }
+
+</script>
+
+</body>
+</html>
