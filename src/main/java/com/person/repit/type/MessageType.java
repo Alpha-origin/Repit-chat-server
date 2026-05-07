@@ -1,4 +1,8 @@
 package com.person.repit.type;
 
-public class MessageType {
+public enum MessageType {
+    START,
+    QUESTION,
+    ANSWER,
+    END
 }
