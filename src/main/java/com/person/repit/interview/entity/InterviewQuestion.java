@@ -3,6 +3,7 @@ package com.person.repit.interview.entity;
 import com.person.repit.interview.type.QuestionType;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 
@@ -27,7 +28,8 @@ public class InterviewQuestion {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "question_type", nullable = false)
-    private QuestionType type;
+    @Builder.Default
+    private QuestionType type = QuestionType.ORIGINAL;
 
     @Column(name = "intention", nullable = false, columnDefinition = "TEXT")
     private String intention;
@@ -35,6 +37,7 @@ public class InterviewQuestion {
     @Column(name = "content", nullable = false, columnDefinition = "TEXT")
     private String content;
 
+    @CreationTimestamp
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 }
