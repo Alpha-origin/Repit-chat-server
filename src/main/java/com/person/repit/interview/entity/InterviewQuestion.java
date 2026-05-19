@@ -23,7 +23,7 @@ public class InterviewQuestion {
     @Column(name = "interview_id", nullable = false)
     private Long interviewId;
 
-    @Column(name = "parent_id", nullable = false)
+    @Column(name = "parent_id")
     private Long parentId;
 
     @Enumerated(EnumType.STRING)

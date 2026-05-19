@@ -13,13 +13,10 @@ import lombok.Setter;
 @Getter
 @Setter
 public class InterviewQuestionRequest {
-    @NotNull
-    private Long questionId;
 
     @NotNull
     private Long interviewId;
 
-    @NotNull
     private Long parentId;
 
     @NotBlank
