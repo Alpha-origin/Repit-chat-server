@@ -1,7 +1,5 @@
 package com.person.repit.interview.service.impl;
 
-import com.google.errorprone.annotations.OverridingMethodsMustInvokeSuper;
-import com.person.repit.interview.dto.request.StartInterviewRequest;
 import com.person.repit.interview.dto.response.QuestionResponse;
 import com.person.repit.interview.entity.Interview;
 import com.person.repit.interview.service.InterviewService;

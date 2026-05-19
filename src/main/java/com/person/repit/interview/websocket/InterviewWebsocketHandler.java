@@ -2,15 +2,12 @@ package com.person.repit.interview.websocket;
 
 import com.person.repit.interview.dto.request.MessageRequest;
 import com.person.repit.common.type.MessageType;
-import com.person.repit.interview.dto.request.StartInterviewRequest;
 import com.person.repit.interview.dto.response.MessageResponse;
 import com.person.repit.interview.dto.response.QuestionResponse;
 import com.person.repit.interview.service.InterviewService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.aspectj.weaver.patterns.TypePatternQuestions;
 import org.springframework.stereotype.Component;
-import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
