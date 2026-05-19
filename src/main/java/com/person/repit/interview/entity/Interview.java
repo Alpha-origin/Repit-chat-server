@@ -24,7 +24,7 @@ public class Interview {
     @Column(name = "persona_id", nullable = false)
     private Long personaId;
 
-    @Column(name = "session_id")
+    @Column(name = "session_id", nullable = false)
     private Long sessionId;
 
     @Enumerated(EnumType.STRING)
