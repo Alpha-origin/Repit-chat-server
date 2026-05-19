@@ -5,6 +5,8 @@ import com.person.repit.interview.type.QuestionType;
 import lombok.Builder;
 import lombok.Getter;
 
+import java.time.LocalDateTime;
+
 @Getter
 @Builder
 public class InterviewQuestionResponse {
@@ -14,6 +16,7 @@ public class InterviewQuestionResponse {
     private QuestionType type;
     private String intention;
     private String content;
+    private LocalDateTime createdAt;
 
     public static InterviewQuestionResponse from(InterviewQuestion question) {
         return InterviewQuestionResponse.builder()
@@ -23,6 +26,7 @@ public class InterviewQuestionResponse {
                 .type(question.getType())
                 .intention(question.getIntention())
                 .content(question.getContent())
+                .createdAt(question.getCreatedAt())
                 .build();
     }
 }
