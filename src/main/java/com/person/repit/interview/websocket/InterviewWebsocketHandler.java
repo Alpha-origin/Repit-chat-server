@@ -1,9 +1,8 @@
 package com.person.repit.interview.websocket;
 
-import com.person.repit.interview.dto.request.MessageRequest;
 import com.person.repit.common.type.MessageType;
 import com.person.repit.interview.dto.response.MessageResponse;
-import com.person.repit.interview.dto.response.QuestionResponse;
+import com.person.repit.interview.dto.response.InterviewQuestionResponse;
 import com.person.repit.interview.service.InterviewService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,7 +29,7 @@ public class InterviewWebsocketHandler extends TextWebSocketHandler {
         if (request.getType() == MessageType.START) {
             String json = objectMapper.writeValueAsString(request.getData());
             StartInterviewRequest startRequest = objectMapper.readValue(json, StartInterviewRequest.class);
-            QuestionResponse questionResponse = interviewService.startInterview(startRequest);
+            InterviewQuestionResponse questionResponse = interviewService.startInterview(startRequest);
             MessageResponse response = MessageResponse
                     .builder()
                     .type(MessageType.QUESTION)

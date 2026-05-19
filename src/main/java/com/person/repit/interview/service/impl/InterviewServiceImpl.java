@@ -1,6 +1,6 @@
 package com.person.repit.interview.service.impl;
 
-import com.person.repit.interview.dto.response.QuestionResponse;
+import com.person.repit.interview.dto.response.InterviewQuestionResponse;
 import com.person.repit.interview.entity.Interview;
 import com.person.repit.interview.service.InterviewService;
 import com.person.repit.interview.type.InterviewStatus;
@@ -17,7 +17,7 @@ import java.util.Random;
 @RequiredArgsConstructor
 public class InterviewServiceImpl implements InterviewService {
     @Override
-    public QuestionResponse startInterview(StartInterviewRequest request) {
+    public InterviewQuestionResponse startInterview(StartInterviewRequest request) {
         Interview interview = new Interview();
 
         interview.setInterviewId(1L);
@@ -38,7 +38,7 @@ public class InterviewServiceImpl implements InterviewService {
 
         log.info("첫 질문 선택 완료 : {}", selectQuestion);
 
-        return QuestionResponse
+        return InterviewQuestionResponse
                 .builder()
                 .questionId(1l)
                 .questionType(
