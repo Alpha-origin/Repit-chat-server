@@ -2,6 +2,7 @@ package com.person.repit.interview.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 
@@ -21,13 +22,19 @@ public class InterviewAnswer {
     @Column(name = "interview_id", nullable = false)
     private Long interviewId;
 
+    @Column(name = "question_id", nullable = false)
     private Long questionId;
 
-    private Long user_id;
+    @Column(name = "user_id", nullable = false)
+    private Long userId;
 
-    private int response_time;
+    @Column(name = "response_time")
+    private Integer responseTime;
 
+    @Column(name = "content", columnDefinition = "TEXT")
     private String content;
 
-    private LocalDateTime created_at;
+    @CreationTimestamp
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
 }
