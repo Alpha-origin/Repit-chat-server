@@ -3,6 +3,7 @@ package com.person.repit.interview.service.impl;
 import com.person.repit.interview.dto.request.InterviewRequest;
 import com.person.repit.interview.dto.response.InterviewResponse;
 import com.person.repit.interview.entity.Interview;
+import com.person.repit.interview.exception.InterviewNotFoundException;
 import com.person.repit.interview.repository.InterviewRepository;
 import com.person.repit.interview.service.InterviewService;
 import com.person.repit.interview.type.InterviewStatus;
@@ -37,7 +38,7 @@ public class InterviewServiceImpl implements InterviewService {
     @Transactional(readOnly = true)
     public InterviewResponse getInterview(Long interviewId) {
         Interview interview = interviewRepository.findById(interviewId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 면접입니다."));
+                .orElseThrow(() -> new InterviewNotFoundException("존재하지 않는 면접입니다."));
 
         return InterviewResponse.from(interview);
     }
@@ -55,7 +56,7 @@ public class InterviewServiceImpl implements InterviewService {
     @Transactional
     public InterviewResponse completeInterview(Long interviewId) {
         Interview interview = interviewRepository.findById(interviewId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 면접입니다."));
+                .orElseThrow(() -> new InterviewNotFoundException("존재하지 않는 면접입니다."));
 
         interview.setStatus(InterviewStatus.COMPLETED);
 
@@ -67,7 +68,7 @@ public class InterviewServiceImpl implements InterviewService {
     @Transactional
     public InterviewResponse quitInterview(Long interviewId) {
         Interview interview = interviewRepository.findById(interviewId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 면접입니다."));
+                .orElseThrow(() -> new InterviewNotFoundException("존재하지 않는 면접입니다."));
 
         interview.setStatus(InterviewStatus.ABANDONED);
 
