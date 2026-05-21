@@ -19,7 +19,7 @@ public class InterviewQuestionRequest {
 
     private Long parentId;
 
-    @NotBlank
+    @NotNull
     private QuestionType type;
 
     @NotBlank

@@ -26,7 +26,7 @@ public class InterviewController {
         return interviewService.getInterview(interviewId);
     }
 
-    @GetMapping("/{userId}")
+    @GetMapping("/user/{userId}")
     public List<InterviewResponse> getUserInterviews(@PathVariable Long userId) {
         return interviewService.getUserInterviews(userId);
     }

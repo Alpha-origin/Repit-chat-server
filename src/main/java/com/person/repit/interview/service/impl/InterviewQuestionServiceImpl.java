@@ -20,7 +20,7 @@ public class InterviewQuestionServiceImpl implements InterviewQuestionService {
     private final InterviewQuestionRepository interviewQuestionRepository;
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public InterviewQuestionResponse createQuestion(InterviewQuestionRequest request) {
         interviewRepository.findById(request.getInterviewId())
                 .orElseThrow(() -> new InterviewNotFoundException("존재하지 않는 면접입니다."));
