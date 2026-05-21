@@ -24,7 +24,7 @@ public class InterviewAnswerServiceImpl implements InterviewAnswerService {
 
     @Override
     @Transactional
-    InterviewAnswerResponse createAnswer(InterviewAnswerRequest request){
+    public InterviewAnswerResponse createAnswer(InterviewAnswerRequest request){
         interviewRepository.findById(request.getInterviewId())
                 .orElseThrow(() -> new InterviewNotFoundException("존재하지 않는 면접입니다."));
 
@@ -46,7 +46,7 @@ public class InterviewAnswerServiceImpl implements InterviewAnswerService {
 
     @Override
     @Transactional(readOnly = true)
-    InterviewAnswerResponse getAnswer(Long answerId){
+    public InterviewAnswerResponse getAnswer(Long answerId){
         InterviewAnswer answer = interviewAnswerRepository.findById(answerId)
                 .orElseThrow(() -> new InterviewAnswerNotFoundException("존재하지 않는 답변입니다."));
 
