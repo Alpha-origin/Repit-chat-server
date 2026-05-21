@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/interviews/questions")
+@RequestMapping("/interviews/question")
 public class InterviewQuestionController {
 
     private final InterviewQuestionService interviewQuestionService;
@@ -19,6 +19,7 @@ public class InterviewQuestionController {
         return interviewQuestionService.createQuestion(request);
     }
 
+    @GetMapping("/{questionId}")
     public InterviewQuestionResponse getQuestion(@PathVariable Long questionId) {
         return interviewQuestionService.getQuestion(questionId);
     }
