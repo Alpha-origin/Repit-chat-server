@@ -1,0 +1,23 @@
+spring:
+  application:
+    name: repit
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/repit?serverTimezone=Asia/Seoul
+    username: root
+    password: ${pw}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    database-platform: org.hibernate.dialect.MySQLDialect
+    hibernate:
+      ddl-auto: update
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+repit:
+  api-server:
+    base-url: http://localhost:8080
