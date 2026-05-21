@@ -1,4 +1,4 @@
-package com.person.repit.interview.exception;
+package com.person.repit.common.exception;
 
 public class AlreadyUsingException extends BusinessException {
     public AlreadyUsingException(String message) {

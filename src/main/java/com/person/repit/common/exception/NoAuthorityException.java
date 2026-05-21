@@ -1,4 +1,4 @@
-package com.person.repit.interview.exception;
+package com.person.repit.common.exception;
 
 public class NoAuthorityException extends AuthenticationException {
     public NoAuthorityException(String message) {

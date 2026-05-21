@@ -1,4 +1,4 @@
-package com.person.repit.interview.exception;
+package com.person.repit.common.exception;
 
 public class AuthenticationException extends RuntimeException {
     public AuthenticationException(String message) {
