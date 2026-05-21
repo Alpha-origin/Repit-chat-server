@@ -5,4 +5,5 @@ import com.person.repit.interview.dto.response.InterviewQuestionResponse;
 
 public interface InterviewQuestionService {
     InterviewQuestionResponse createQuestion(InterviewQuestionRequest request);
+    InterviewQuestionResponse getQuestion(Long questionId);
 }
