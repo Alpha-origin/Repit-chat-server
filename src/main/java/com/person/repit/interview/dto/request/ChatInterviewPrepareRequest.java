@@ -27,7 +27,7 @@ public class ChatInterviewPrepareRequest {
 
     @Valid
     @NotEmpty
-    private InterviewStyle style;
+    private InterviewStyle personaType;
 
     @Valid
     @NotEmpty
