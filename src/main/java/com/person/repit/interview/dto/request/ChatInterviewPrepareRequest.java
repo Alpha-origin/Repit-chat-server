@@ -31,5 +31,5 @@ public class ChatInterviewPrepareRequest {
 
     @Valid
     @NotEmpty
-    private List<ChatQuestionP>
+    private List<ChatQuestionPrepareRequest> questions;
 }
