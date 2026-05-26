@@ -12,7 +12,7 @@ import java.util.List;
 
 @Getter
 @Builder
-public class ChatInterviewResultRequest {
+public class ChatInterviewResultSaveRequest {
 
     private String sessionId;
     private Long interviewId;
@@ -21,8 +21,8 @@ public class ChatInterviewResultRequest {
     private List<QuestionResult> questions;
     private List<AnswerResult> answers;
 
-    public static ChatInterviewResultRequest from(ChatInterviewSession session) {
-        return ChatInterviewResultRequest.builder()
+    public static ChatInterviewResultSaveRequest from(ChatInterviewSession session) {
+        return ChatInterviewResultSaveRequest.builder()
                 .sessionId(session.getSessionId())
                 .interviewId(session.getInterviewId())
                 .userId(session.getUserId())
@@ -55,6 +55,7 @@ public class ChatInterviewResultRequest {
     @Getter
     @Builder
     public static class AnswerResult {
+        private Long interviewId;
         private Long questionId;
         private Long userId;
         private Integer responseTime;
@@ -62,6 +63,7 @@ public class ChatInterviewResultRequest {
 
         public static AnswerResult from(ChatAnswer answer) {
             return AnswerResult.builder()
+                    .interviewId(answer.getInterviewId())
                     .questionId(answer.getQuestionId())
                     .userId(answer.getUserId())
                     .responseTime(answer.getResponseTime())
