@@ -17,9 +17,6 @@ public class RedisConfig {
         RedisTemplate<String, Object> template = new RedisTemplate<>();
         template.setConnectionFactory(factory);
 
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.registerModule(new JavaTimeModule());
-
         RedisSerializer<Object> serializer = RedisSerializer.json();
 
         template.setKeySerializer(new StringRedisSerializer());

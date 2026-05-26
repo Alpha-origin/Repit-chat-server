@@ -8,6 +8,8 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Getter
 @NoArgsConstructor
 public class ChatInterviewPrepareRequest {
@@ -27,16 +29,7 @@ public class ChatInterviewPrepareRequest {
     @NotEmpty
     private InterviewStyle style;
 
-    @Getter
-    @NoArgsConstructor
-    public static class QuestionRequest {
-        @NotNull
-        private Long questionId;
-
-        @NotBlank
-        private String intention;
-
-        @NotBlank
-        private String content;
-    }
+    @Valid
+    @NotEmpty
+    private List<ChatQuestionP>
 }
