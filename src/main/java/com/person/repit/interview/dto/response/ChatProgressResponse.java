@@ -1,6 +1,5 @@
 package com.person.repit.interview.dto.response;
 
-import com.person.repit.interview.entity.InterviewQuestion;
 import com.person.repit.interview.model.ChatQuestion;
 import com.person.repit.interview.type.InterviewStatus;
 import lombok.Builder;
@@ -14,7 +13,7 @@ public class ChatProgressResponse {
     private ChatQuestionResponse question;
     private String message;
 
-    public static ChatProgressResponse next(InterviewQuestion question) {
+    public static ChatProgressResponse next(ChatQuestion question) {
         return ChatProgressResponse.builder()
                 .status(InterviewStatus.IN_PROGRESS)
                 .question(ChatQuestionResponse.from(question))
