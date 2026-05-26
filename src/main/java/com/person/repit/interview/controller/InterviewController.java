@@ -1,7 +1,7 @@
 package com.person.repit.interview.controller;
 
 import com.person.repit.interview.dto.request.InterviewRequest;
-import com.person.repit.interview.dto.response.InterviewResponse;
+import com.person.repit.interview.dto.response.ChatInterviewResponse;
 import com.person.repit.interview.service.InterviewService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -17,27 +17,27 @@ public class InterviewController {
     private final InterviewService interviewService;
 
     @PostMapping
-    public InterviewResponse createInterview(@Valid @RequestBody InterviewRequest request) {
+    public ChatInterviewResponse createInterview(@Valid @RequestBody InterviewRequest request) {
         return interviewService.createInterview(request);
     }
 
     @GetMapping("/{interviewId}")
-    public InterviewResponse getInterview(@PathVariable Long interviewId) {
+    public ChatInterviewResponse getInterview(@PathVariable Long interviewId) {
         return interviewService.getInterview(interviewId);
     }
 
     @GetMapping("/user/{userId}")
-    public List<InterviewResponse> getUserInterviews(@PathVariable Long userId) {
+    public List<ChatInterviewResponse> getUserInterviews(@PathVariable Long userId) {
         return interviewService.getUserInterviews(userId);
     }
 
     @PutMapping("/{interviewId}/complete")
-    public InterviewResponse completeInterview(@PathVariable Long interviewId) {
+    public ChatInterviewResponse completeInterview(@PathVariable Long interviewId) {
         return interviewService.completeInterview(interviewId);
     }
 
     @PutMapping("/{interviewId}/quit")
-    public InterviewResponse quitInterview(@PathVariable Long interviewId) {
+    public ChatInterviewResponse quitInterview(@PathVariable Long interviewId) {
         return interviewService.quitInterview(interviewId);
     }
 }

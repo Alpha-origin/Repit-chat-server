@@ -1,7 +1,7 @@
 package com.person.repit.interview.service.impl;
 
 import com.person.repit.interview.dto.request.InterviewQuestionRequest;
-import com.person.repit.interview.dto.response.InterviewQuestionResponse;
+import com.person.repit.interview.dto.response.ChatQuestionResponse;
 import com.person.repit.interview.entity.InterviewQuestion;
 import com.person.repit.interview.exception.InterviewNotFoundException;
 import com.person.repit.interview.exception.InterviewQuestionNotFoundException;
@@ -21,7 +21,7 @@ public class InterviewQuestionServiceImpl implements InterviewQuestionService {
 
     @Override
     @Transactional
-    public InterviewQuestionResponse createQuestion(InterviewQuestionRequest request) {
+    public ChatQuestionResponse createQuestion(InterviewQuestionRequest request) {
         interviewRepository.findById(request.getInterviewId())
                 .orElseThrow(() -> new InterviewNotFoundException("존재하지 않는 면접입니다."));
 
@@ -35,15 +35,15 @@ public class InterviewQuestionServiceImpl implements InterviewQuestionService {
 
         interviewQuestionRepository.save(question);
 
-        return InterviewQuestionResponse.from(question);
+        return ChatQuestionResponse.from(question);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public InterviewQuestionResponse getQuestion(Long questionId){
+    public ChatQuestionResponse getQuestion(Long questionId){
         InterviewQuestion question = interviewQuestionRepository.findById(questionId)
                 .orElseThrow(() -> new InterviewQuestionNotFoundException("해당 질문은 존재하지 않습니다."));
 
-        return InterviewQuestionResponse.from(question);
+        return ChatQuestionResponse.from(question);
     }
 }

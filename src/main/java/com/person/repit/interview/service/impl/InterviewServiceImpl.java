@@ -1,7 +1,7 @@
 package com.person.repit.interview.service.impl;
 
 import com.person.repit.interview.dto.request.InterviewRequest;
-import com.person.repit.interview.dto.response.InterviewResponse;
+import com.person.repit.interview.dto.response.ChatInterviewResponse;
 import com.person.repit.interview.entity.Interview;
 import com.person.repit.interview.exception.InterviewNotFoundException;
 import com.person.repit.interview.repository.InterviewRepository;
@@ -22,7 +22,7 @@ public class InterviewServiceImpl implements InterviewService {
 
     @Override
     @Transactional
-    public InterviewResponse createInterview(InterviewRequest request) {
+    public ChatInterviewResponse createInterview(InterviewRequest request) {
         Interview interview = Interview.builder()
                 .userId(request.getUserId())
                 .personaId(request.getPersonaId())
@@ -31,48 +31,48 @@ public class InterviewServiceImpl implements InterviewService {
                 .build();
 
         interviewRepository.save(interview);
-        return InterviewResponse.from(interview);
+        return ChatInterviewResponse.from(interview);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public InterviewResponse getInterview(Long interviewId) {
+    public ChatInterviewResponse getInterview(Long interviewId) {
         Interview interview = interviewRepository.findById(interviewId)
                 .orElseThrow(() -> new InterviewNotFoundException("존재하지 않는 면접입니다."));
 
-        return InterviewResponse.from(interview);
+        return ChatInterviewResponse.from(interview);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<InterviewResponse> getUserInterviews(Long userId) {
+    public List<ChatInterviewResponse> getUserInterviews(Long userId) {
         return interviewRepository.findByUserId(userId)
                 .stream()
-                .map(InterviewResponse::from)
+                .map(ChatInterviewResponse::from)
                 .toList();
     }
 
     @Override
     @Transactional
-    public InterviewResponse completeInterview(Long interviewId) {
+    public ChatInterviewResponse completeInterview(Long interviewId) {
         Interview interview = interviewRepository.findById(interviewId)
                 .orElseThrow(() -> new InterviewNotFoundException("존재하지 않는 면접입니다."));
 
         interview.setStatus(InterviewStatus.COMPLETED);
 
-        return InterviewResponse.from(interview);
+        return ChatInterviewResponse.from(interview);
     }
 
 
     @Override
     @Transactional
-    public InterviewResponse quitInterview(Long interviewId) {
+    public ChatInterviewResponse quitInterview(Long interviewId) {
         Interview interview = interviewRepository.findById(interviewId)
                 .orElseThrow(() -> new InterviewNotFoundException("존재하지 않는 면접입니다."));
 
         interview.setStatus(InterviewStatus.ABANDONED);
 
-        return InterviewResponse.from(interview);
+        return ChatInterviewResponse.from(interview);
     }
 
 }

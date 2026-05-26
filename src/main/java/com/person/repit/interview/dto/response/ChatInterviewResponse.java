@@ -9,22 +9,21 @@ import java.time.LocalDateTime;
 
 @Getter
 @Builder
-public class InterviewResponse {
+public class ChatInterviewResponse {
+    private String sessionId;
     private Long interviewId;
     private Long userId;
     private Long personaId;
-    private String sessionId;
     private InterviewStatus status;
-    private LocalDateTime createdAt;
+    private int currentQuestionIndex;
 
-    public static InterviewResponse from(Interview interview) {
-        return InterviewResponse.builder()
+    public static ChatInterviewResponse from(Interview interview) {
+        return ChatInterviewResponse.builder()
                 .interviewId(interview.getInterviewId())
                 .userId(interview.getUserId())
                 .personaId(interview.getPersonaId())
                 .sessionId(interview.getSessionId())
                 .status(interview.getStatus())
-                .createdAt(interview.getCreatedAt())
                 .build();
     }
 }

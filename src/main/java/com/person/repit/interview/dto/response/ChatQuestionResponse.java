@@ -5,28 +5,22 @@ import com.person.repit.interview.type.QuestionType;
 import lombok.Builder;
 import lombok.Getter;
 
-import java.time.LocalDateTime;
-
 @Getter
 @Builder
-public class InterviewQuestionResponse {
+public class ChatQuestionResponse {
     private Long questionId;
-    private Long interviewId;
     private Long parentId;
     private QuestionType type;
     private String intention;
     private String content;
-    private LocalDateTime createdAt;
 
-    public static InterviewQuestionResponse from(InterviewQuestion question) {
-        return InterviewQuestionResponse.builder()
+    public static ChatQuestionResponse from(InterviewQuestion question) {
+        return ChatQuestionResponse.builder()
                 .questionId(question.getQuestionId())
-                .interviewId(question.getInterviewId())
                 .parentId(question.getParentId())
                 .type(question.getType())
                 .intention(question.getIntention())
                 .content(question.getContent())
-                .createdAt(question.getCreatedAt())
                 .build();
     }
 }
