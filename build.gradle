@@ -36,6 +36,15 @@ dependencies {
 
     implementation 'org.springframework.boot:spring-boot-starter-validation'
 
+    implementation "tools.jackson.core:jackson-databind:3.0.4"
+
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0'
+
+    // Redis
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+
 }
 
 tasks.named('test') {
