@@ -17,11 +17,12 @@ public class ChatInterviewResponse {
 
     public static ChatInterviewResponse from(ChatInterviewSession interview) {
         return ChatInterviewResponse.builder()
+                .sessionId(interview.getSessionId())
                 .interviewId(interview.getInterviewId())
                 .userId(interview.getUserId())
                 .personaId(interview.getPersonaId())
-                .sessionId(interview.getSessionId())
                 .status(interview.getStatus())
+                .currentQuestionIndex(interview.getCurrentQuestionIndex())
                 .build();
     }
 }
