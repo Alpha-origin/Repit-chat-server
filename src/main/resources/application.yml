@@ -2,9 +2,11 @@ spring:
   application:
     name: repit-chat
 
-server:
-  port: 8080
+  data:
+    redis:
+      host: localhost
+      port: 6379
 
 repit:
   api-server:
-    base-url: ${API_SERVER_URL:[http://localhost:8080}](http://localhost:8080})
+    base-url: http://localhost:8080
