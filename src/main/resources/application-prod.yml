@@ -1,9 +1,9 @@
 spring:
   data:
     redis:
-      host: ${REDIS_HOST}
+      host: ${REDIS_HOST:localhost}
       port: 6379
-      password: ${REDIS_PASSWORD}
+      password: ${REDIS_PASSWORD:}
 
 management:
   endpoints:
@@ -17,4 +17,4 @@ management:
 
 repit:
   api-server:
-    base-url: ${API_SERVER_URL}
+    base-url: ${API_SERVER_URL:http://localhost:8080}

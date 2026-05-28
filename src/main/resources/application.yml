@@ -1,1 +1,12 @@
+spring:
+  application:
+    name: repit-chat
 
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+repit:
+  api-server:
+    base-url: http://localhost:8080
