@@ -35,6 +35,7 @@ public class ChatInterviewResultSaveRequest {
     @Getter
     @Builder
     public static class QuestionResult {
+
         private Long questionId;
         private Long parentId;
         private QuestionType type;
@@ -55,6 +56,7 @@ public class ChatInterviewResultSaveRequest {
     @Getter
     @Builder
     public static class AnswerResult {
+
         private Long interviewId;
         private Long questionId;
         private Long userId;
@@ -72,4 +74,3 @@ public class ChatInterviewResultSaveRequest {
         }
     }
 }
-
