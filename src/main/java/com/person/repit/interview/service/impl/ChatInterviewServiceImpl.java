@@ -31,6 +31,7 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
 
     private static final String KEY_PREFIX = "chat:interview:";
     private static final Duration SESSION_TTL = Duration.ofHours(3);
+    private static final int MAX_QUESTION_DEPTH = 3;
 
     private final AiQuestionClient aiQuestionClient;
     private final RedisTemplate<String, Object> redisTemplate;
@@ -112,22 +113,24 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
 
         session.getAnswers().add(answer);
 
-        FollowQuestionAiResponse aiResponse = aiQuestionClient.decideFollowQuestion(
-                FollowQuestionAiRequest.of(
-                        session.getSessionId(),
-                        session.getInterviewId(),
-                        session.getUserId(),
-                        session.getPersonaId(),
-                        session.getPersonaType(),
-                        currentQuestion,
-                        request.getContent(),
-                        request.getResponseTime()
-                )
-        );
+        if (canCreateFollowQuestion(session, currentQuestion)) {
+            FollowQuestionAiResponse aiResponse = aiQuestionClient.decideFollowQuestion(
+                    FollowQuestionAiRequest.of(
+                            session.getSessionId(),
+                            session.getInterviewId(),
+                            session.getUserId(),
+                            session.getPersonaId(),
+                            session.getPersonaType(),
+                            currentQuestion,
+                            request.getContent(),
+                            request.getResponseTime()
+                    )
+            );
 
-        if (Boolean.TRUE.equals(aiResponse.getRequired())) {
-            ChatQuestion followQuestion = createFollowQuestion(currentQuestion, aiResponse);
-            session.getQuestions().add(session.getCurrentQuestionIndex() + 1, followQuestion);
+            if (aiResponse != null && Boolean.TRUE.equals(aiResponse.getRequired())) {
+                ChatQuestion followQuestion = createFollowQuestion(currentQuestion, aiResponse);
+                session.getQuestions().add(session.getCurrentQuestionIndex() + 1, followQuestion);
+            }
         }
 
         session.moveNextQuestion();
@@ -169,6 +172,49 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
         return ChatProgressResponse.quit();
     }
 
+    private boolean canCreateFollowQuestion(ChatInterviewSession session, ChatQuestion currentQuestion) {
+        return calculateQuestionDepth(session, currentQuestion) < MAX_QUESTION_DEPTH;
+    }
+
+    private int calculateQuestionDepth(ChatInterviewSession session, ChatQuestion question) {
+        int depth = 1;
+        Long parentId = question.getParentId();
+
+        while (parentId != null) {
+            ChatQuestion parentQuestion = findQuestionById(session, parentId);
+
+            if (parentQuestion == null) {
+                break;
+            }
+
+            depth++;
+            parentId = parentQuestion.getParentId();
+        }
+
+        return depth;
+    }
+
+    private ChatQuestion findQuestionById(ChatInterviewSession session, Long questionId) {
+        return session.getQuestions()
+                .stream()
+                .filter(question -> questionId.equals(question.getQuestionId()))
+                .findFirst()
+                .orElse(null);
+    }
+
+    private ChatQuestion createFollowQuestion(
+            ChatQuestion parentQuestion,
+            FollowQuestionAiResponse aiResponse
+    ) {
+        return ChatQuestion.builder()
+                .questionId(followQuestionId.getAndDecrement())
+                .parentId(parentQuestion.getQuestionId())
+                .type(QuestionType.FOLLOW)
+                .intention(aiResponse.getIntention())
+                .content(aiResponse.getContent())
+                .createdAt(LocalDateTime.now())
+                .build();
+    }
 
     private ChatInterviewSession getSession(String sessionId) {
         Object value = redisTemplate.opsForValue().get(createKey(sessionId));
@@ -194,19 +240,5 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
 
     private String createKey(String sessionId) {
         return KEY_PREFIX + sessionId;
-    }
-
-    private ChatQuestion createFollowQuestion(
-            ChatQuestion parentQuestion,
-            FollowQuestionAiResponse aiResponse
-    ) {
-        return ChatQuestion.builder()
-                .questionId(followQuestionId.getAndDecrement())
-                .parentId(parentQuestion.getQuestionId())
-                .type(QuestionType.FOLLOW)
-                .intention(aiResponse.getIntention())
-                .content(aiResponse.getContent())
-                .createdAt(LocalDateTime.now())
-                .build();
     }
 }
