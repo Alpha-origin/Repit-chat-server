@@ -23,12 +23,18 @@ public class AiQuestionClientImpl implements AiQuestionClient {
     @Override
     public FollowQuestionAiResponse decideFollowQuestion(FollowQuestionAiRequest request) {
         try {
-            return restClient.post()
+            FollowQuestionAiResponse response = restClient.post()
                     .uri("/api/ai/follow-question")
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(request)
                     .retrieve()
                     .body(FollowQuestionAiResponse.class);
+
+            if (response == null) {
+                return FollowQuestionAiResponse.notRequired();
+            }
+
+            return response;
         } catch (RestClientException exception) {
             return FollowQuestionAiResponse.notRequired();
         }
