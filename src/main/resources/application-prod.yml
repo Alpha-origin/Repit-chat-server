@@ -17,3 +17,5 @@ management:
 repit:
   api-server:
     base-url: ${API_SERVER_URL:http://localhost:8080}
+  ai-server:
+    base-url: ${AI_SERVER_URL:http://localhost:8000}
