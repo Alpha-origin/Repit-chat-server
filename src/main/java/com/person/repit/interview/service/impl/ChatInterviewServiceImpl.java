@@ -3,12 +3,15 @@ package com.person.repit.interview.service.impl;
 import com.person.repit.interview.dto.request.ChatAnswerRequest;
 import com.person.repit.interview.dto.request.ChatInterviewPrepareRequest;
 import com.person.repit.interview.dto.request.ChatInterviewResultSaveRequest;
+import com.person.repit.interview.dto.request.FollowQuestionAiRequest;
 import com.person.repit.interview.dto.response.ChatInterviewResponse;
 import com.person.repit.interview.dto.response.ChatProgressResponse;
 import com.person.repit.interview.dto.response.ChatQuestionResponse;
+import com.person.repit.interview.dto.response.FollowQuestionAiResponse;
 import com.person.repit.interview.model.ChatAnswer;
 import com.person.repit.interview.model.ChatInterviewSession;
 import com.person.repit.interview.model.ChatQuestion;
+import com.person.repit.interview.service.AiQuestionClient;
 import com.person.repit.interview.service.ApiServerClient;
 import com.person.repit.interview.service.ChatInterviewService;
 import com.person.repit.interview.type.InterviewStatus;
@@ -29,6 +32,7 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
     private static final String KEY_PREFIX = "chat:interview:";
     private static final Duration SESSION_TTL = Duration.ofHours(3);
 
+    private final AiQuestionClient aiQuestionClient;
     private final RedisTemplate<String, Object> redisTemplate;
     private final ApiServerClient apiServerClient;
     private final AtomicLong followQuestionId = new AtomicLong(-1);
@@ -108,8 +112,21 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
 
         session.getAnswers().add(answer);
 
-        if (shouldCreateFollowQuestion(currentQuestion, request.getContent())) {
-            ChatQuestion followQuestion = createFollowQuestion(currentQuestion);
+        FollowQuestionAiResponse aiResponse = aiQuestionClient.decideFollowQuestion(
+                FollowQuestionAiRequest.of(
+                        session.getSessionId(),
+                        session.getInterviewId(),
+                        session.getUserId(),
+                        session.getPersonaId(),
+                        session.getPersonaType(),
+                        currentQuestion,
+                        request.getContent(),
+                        request.getResponseTime()
+                )
+        );
+
+        if (Boolean.TRUE.equals(aiResponse.getRequired())) {
+            ChatQuestion followQuestion = createFollowQuestion(currentQuestion, aiResponse);
             session.getQuestions().add(session.getCurrentQuestionIndex() + 1, followQuestion);
         }
 
@@ -152,24 +169,6 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
         return ChatProgressResponse.quit();
     }
 
-    private boolean shouldCreateFollowQuestion(ChatQuestion question, String answerContent) {
-        if (question.getType() == QuestionType.FOLLOW) {
-            return false;
-        }
-
-        return answerContent == null || answerContent.trim().length() < 80;
-    }
-
-    private ChatQuestion createFollowQuestion(ChatQuestion parentQuestion) {
-        return ChatQuestion.builder()
-                .questionId(followQuestionId.getAndDecrement())
-                .parentId(parentQuestion.getQuestionId())
-                .type(QuestionType.FOLLOW)
-                .intention("지원자의 답변을 더 구체화하고 질문 의도에 맞는 근거를 확인합니다.")
-                .content("방금 답변을 조금 더 구체적으로 설명해주세요. 실제 경험이나 프로젝트 사례를 포함해서 말씀해주실 수 있을까요?")
-                .createdAt(LocalDateTime.now())
-                .build();
-    }
 
     private ChatInterviewSession getSession(String sessionId) {
         Object value = redisTemplate.opsForValue().get(createKey(sessionId));
@@ -195,5 +194,19 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
 
     private String createKey(String sessionId) {
         return KEY_PREFIX + sessionId;
+    }
+
+    private ChatQuestion createFollowQuestion(
+            ChatQuestion parentQuestion,
+            FollowQuestionAiResponse aiResponse
+    ) {
+        return ChatQuestion.builder()
+                .questionId(followQuestionId.getAndDecrement())
+                .parentId(parentQuestion.getQuestionId())
+                .type(QuestionType.FOLLOW)
+                .intention(aiResponse.getIntention())
+                .content(aiResponse.getContent())
+                .createdAt(LocalDateTime.now())
+                .build();
     }
 }
