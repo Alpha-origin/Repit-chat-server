@@ -16,7 +16,9 @@ services:
       - redis
     environment:
       SPRING_PROFILES_ACTIVE: prod
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      API_SERVER_URL: http://host.docker.internal:8080
+      REDIS_HOST: ${REDIS_HOST}
+      REDIS_PORT: ${REDIS_PORT}
+      API_SERVER_URL: ${API_SERVER_URL}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL}
     restart: unless-stopped
