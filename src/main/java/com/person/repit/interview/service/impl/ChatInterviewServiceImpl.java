@@ -139,7 +139,7 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
 
         if (nextQuestion == null) {
             session.setStatus(InterviewStatus.COMPLETED);
-            apiServerClient.saveInterviewResult(ChatInterviewResultSaveRequest.from(session));
+            apiServerClient.saveInterviewResult(ChatInterviewResultSaveRequest.from(session), "anything");
             deleteSession(sessionId);
 
             return ChatProgressResponse.end();
@@ -155,7 +155,7 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
         ChatInterviewSession session = getSession(sessionId);
         session.setStatus(InterviewStatus.COMPLETED);
 
-        apiServerClient.saveInterviewResult(ChatInterviewResultSaveRequest.from(session));
+        apiServerClient.saveInterviewResult(ChatInterviewResultSaveRequest.from(session), "anything");
         deleteSession(sessionId);
 
         return ChatProgressResponse.end();
@@ -166,7 +166,7 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
         ChatInterviewSession session = getSession(sessionId);
         session.setStatus(InterviewStatus.ABANDONED);
 
-        apiServerClient.saveInterviewResult(ChatInterviewResultSaveRequest.from(session));
+        apiServerClient.saveInterviewResult(ChatInterviewResultSaveRequest.from(session), "anything");
         deleteSession(sessionId);
 
         return ChatProgressResponse.quit();

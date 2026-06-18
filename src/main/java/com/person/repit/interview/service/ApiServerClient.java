@@ -17,11 +17,12 @@ public class ApiServerClient {
                 .build();
     }
 
-    public void saveInterviewResult(ChatInterviewResultSaveRequest request) {
+    public void saveInterviewResult(ChatInterviewResultSaveRequest request, String authorization) {
         restClient.post()
                 .uri("/api/interviews/result")
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(request)
+                .header("Authorization", authorization)
                 .retrieve()
                 .toBodilessEntity();
     }
