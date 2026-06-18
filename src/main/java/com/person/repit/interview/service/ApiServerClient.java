@@ -11,6 +11,7 @@ public class ApiServerClient {
     private final RestClient restClient;
 
     public ApiServerClient(@Value("${repit.api-server.base-url}") String baseUrl) {
+        System.out.println("API URL = " + baseUrl);
         this.restClient = RestClient.builder()
                 .baseUrl(baseUrl)
                 .build();

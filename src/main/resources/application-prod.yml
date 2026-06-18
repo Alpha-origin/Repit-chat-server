@@ -16,7 +16,7 @@ management:
 
 repit:
   api-server:
-    base-url: ${API_SERVER_URL:http://localhost:8080}
+    base-url: ${API_SERVER_URL}
 
 anthropic:
   api-key: ${ANTHROPIC_API_KEY}
