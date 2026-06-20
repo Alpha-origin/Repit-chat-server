@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.person.repit.interview.dto.request.FollowQuestionAiRequest;
 import com.person.repit.interview.dto.response.FollowQuestionAiResponse;
 import com.person.repit.interview.service.AiQuestionClient;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -13,6 +14,7 @@ import org.springframework.web.client.RestClient;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @Component
 public class AiQuestionClientImpl implements AiQuestionClient {
 
@@ -48,12 +50,33 @@ public class AiQuestionClientImpl implements AiQuestionClient {
 
             String text = extractText(response);
 
+            log.info("[AI RAW TEXT] {}", text);
+
             if (text == null || text.isBlank()) {
                 return FollowQuestionAiResponse.notRequired();
             }
 
-            return objectMapper.readValue(cleanJson(text), FollowQuestionAiResponse.class);
-        } catch (Exception exception) {
+            String json = cleanJson(text);
+
+            log.info("[AI CLEAN JSON] {}", json);
+
+            FollowQuestionAiResponse result =
+                    objectMapper.readValue(json, FollowQuestionAiResponse.class);
+
+            log.info("[AI PARSED RESULT] required={}, content={}",
+                    result.getRequired(),
+                    result.getContent()
+            );
+
+            if (result.getRequired() == null) {
+                result = FollowQuestionAiResponse.notRequired();
+            }
+
+            return result;
+
+        } catch (Exception e) {
+            log.error("[AI FAIL]", e);
+
             return FollowQuestionAiResponse.notRequired();
         }
     }
@@ -157,13 +180,23 @@ public class AiQuestionClientImpl implements AiQuestionClient {
     }
 
     private String cleanJson(String text) {
+
+        if (text == null) return null;
+
         String trimmed = text.trim();
 
         if (trimmed.startsWith("```")) {
-            trimmed = trimmed.replaceFirst("^```json", "")
-                    .replaceFirst("^```", "")
-                    .replaceFirst("```$", "")
+            trimmed = trimmed
+                    .replaceAll("```json", "")
+                    .replaceAll("```", "")
                     .trim();
+        }
+
+        int start = trimmed.indexOf("{");
+        int end = trimmed.lastIndexOf("}");
+
+        if (start != -1 && end != -1 && end > start) {
+            trimmed = trimmed.substring(start, end + 1);
         }
 
         return trimmed;

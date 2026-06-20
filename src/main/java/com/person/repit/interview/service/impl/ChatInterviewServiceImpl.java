@@ -17,6 +17,7 @@ import com.person.repit.interview.service.ChatInterviewService;
 import com.person.repit.interview.type.InterviewStatus;
 import com.person.repit.interview.type.QuestionType;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -25,13 +26,13 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ChatInterviewServiceImpl implements ChatInterviewService {
 
     private static final String KEY_PREFIX = "chat:interview:";
     private static final Duration SESSION_TTL = Duration.ofHours(3);
-    private static final int MAX_QUESTION_DEPTH = 3;
 
     private final AiQuestionClient aiQuestionClient;
     private final RedisTemplate<String, Object> redisTemplate;
@@ -93,6 +94,7 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
     public ChatProgressResponse submitAnswer(String sessionId, ChatAnswerRequest request) {
 
         ChatInterviewSession session = getSession(sessionId);
+
         ChatQuestion currentQuestion = session.getCurrentQuestion();
 
         if (currentQuestion == null) {
@@ -100,7 +102,7 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
         }
 
         if (!currentQuestion.getQuestionId().equals(request.getQuestionId())) {
-            throw new IllegalArgumentException("질문 ID 불일치");
+            throw new IllegalArgumentException("질문 불일치");
         }
 
         ChatAnswer answer = ChatAnswer.builder()
@@ -114,31 +116,39 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
 
         session.getAnswers().add(answer);
 
-        if (canCreateFollowQuestion(session, currentQuestion)) {
+        log.info("[AI TRIGGER] session={}, qId={}", sessionId, currentQuestion.getQuestionId());
 
-            FollowQuestionAiResponse aiResponse =
-                    aiQuestionClient.decideFollowQuestion(
-                            FollowQuestionAiRequest.of(
-                                    session.getSessionId(),
-                                    session.getInterviewId(),
-                                    session.getUserId(),
-                                    session.getPersonaId(),
-                                    session.getPersonaType(),
-                                    currentQuestion,
-                                    request.getContent(),
-                                    request.getResponseTime()
-                            )
-                    );
+        FollowQuestionAiResponse aiResponse = null;
 
-            if (aiResponse != null && Boolean.TRUE.equals(aiResponse.getRequired())) {
+        try {
+            aiResponse = aiQuestionClient.decideFollowQuestion(
+                    FollowQuestionAiRequest.of(
+                            session.getSessionId(),
+                            session.getInterviewId(),
+                            session.getUserId(),
+                            session.getPersonaId(),
+                            session.getPersonaType(),
+                            currentQuestion,
+                            request.getContent(),
+                            request.getResponseTime()
+                    )
+            );
 
-                ChatQuestion followQuestion = createFollowQuestion(currentQuestion, aiResponse);
+            log.info("[AI RESPONSE] {}", aiResponse);
 
-                session.getQuestions().add(
-                        session.getCurrentQuestionIndex() + 1,
-                        followQuestion
-                );
-            }
+        } catch (Exception e) {
+            log.error("[AI ERROR]", e);
+        }
+        if (aiResponse != null && Boolean.TRUE.equals(aiResponse.getRequired())) {
+
+            ChatQuestion followQuestion = createFollowQuestion(currentQuestion, aiResponse);
+
+            session.getQuestions().add(
+                    session.getCurrentQuestionIndex() + 1,
+                    followQuestion
+            );
+
+            log.info("[FOLLOW QUESTION CREATED] {}", followQuestion.getContent());
         }
         session.moveNextQuestion();
 
@@ -157,6 +167,7 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
 
             return ChatProgressResponse.end();
         }
+
         saveSession(session);
 
         return ChatProgressResponse.next(nextQuestion);
@@ -185,7 +196,7 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
     }
 
     private boolean canCreateFollowQuestion(ChatInterviewSession session, ChatQuestion currentQuestion) {
-        return calculateQuestionDepth(session, currentQuestion) < MAX_QUESTION_DEPTH;
+        return true;
     }
 
     private int calculateQuestionDepth(ChatInterviewSession session, ChatQuestion question) {

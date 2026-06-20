@@ -35,13 +35,24 @@ public class ChatInterviewSession {
     private LocalDateTime createdAt;
 
     public ChatQuestion getCurrentQuestion() {
-        if (questions == null || currentQuestionIndex >= questions.size()) {
+        if (currentQuestionIndex < 0 || currentQuestionIndex >= questions.size()) {
             return null;
         }
         return questions.get(currentQuestionIndex);
     }
 
     public void moveNextQuestion() {
-        currentQuestionIndex += 1;
+        if (questions == null || questions.isEmpty()) {
+            currentQuestionIndex = -1;
+            return;
+        }
+
+        int nextIndex = currentQuestionIndex + 1;
+
+        if (nextIndex >= questions.size()) {
+            currentQuestionIndex = -1;
+        } else {
+            currentQuestionIndex = nextIndex;
+        }
     }
 }
