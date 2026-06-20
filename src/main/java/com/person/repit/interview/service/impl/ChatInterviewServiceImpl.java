@@ -91,6 +91,7 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
 
     @Override
     public ChatProgressResponse submitAnswer(String sessionId, ChatAnswerRequest request) {
+
         ChatInterviewSession session = getSession(sessionId);
         ChatQuestion currentQuestion = session.getCurrentQuestion();
 
@@ -99,7 +100,7 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
         }
 
         if (!currentQuestion.getQuestionId().equals(request.getQuestionId())) {
-            throw new IllegalArgumentException("현재 질문과 답변 questionId가 일치하지 않습니다.");
+            throw new IllegalArgumentException("질문 ID 불일치");
         }
 
         ChatAnswer answer = ChatAnswer.builder()
@@ -114,37 +115,48 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
         session.getAnswers().add(answer);
 
         if (canCreateFollowQuestion(session, currentQuestion)) {
-            FollowQuestionAiResponse aiResponse = aiQuestionClient.decideFollowQuestion(
-                    FollowQuestionAiRequest.of(
-                            session.getSessionId(),
-                            session.getInterviewId(),
-                            session.getUserId(),
-                            session.getPersonaId(),
-                            session.getPersonaType(),
-                            currentQuestion,
-                            request.getContent(),
-                            request.getResponseTime()
-                    )
-            );
+
+            FollowQuestionAiResponse aiResponse =
+                    aiQuestionClient.decideFollowQuestion(
+                            FollowQuestionAiRequest.of(
+                                    session.getSessionId(),
+                                    session.getInterviewId(),
+                                    session.getUserId(),
+                                    session.getPersonaId(),
+                                    session.getPersonaType(),
+                                    currentQuestion,
+                                    request.getContent(),
+                                    request.getResponseTime()
+                            )
+                    );
 
             if (aiResponse != null && Boolean.TRUE.equals(aiResponse.getRequired())) {
+
                 ChatQuestion followQuestion = createFollowQuestion(currentQuestion, aiResponse);
-                session.getQuestions().add(session.getCurrentQuestionIndex() + 1, followQuestion);
+
+                session.getQuestions().add(
+                        session.getCurrentQuestionIndex() + 1,
+                        followQuestion
+                );
             }
         }
-
         session.moveNextQuestion();
 
         ChatQuestion nextQuestion = session.getCurrentQuestion();
 
         if (nextQuestion == null) {
+
             session.setStatus(InterviewStatus.COMPLETED);
-            apiServerClient.saveInterviewResult(ChatInterviewResultSaveRequest.from(session), "anything");
+
+            apiServerClient.saveInterviewResult(
+                    ChatInterviewResultSaveRequest.from(session),
+                    "anything"
+            );
+
             deleteSession(sessionId);
 
             return ChatProgressResponse.end();
         }
-
         saveSession(session);
 
         return ChatProgressResponse.next(nextQuestion);
