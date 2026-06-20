@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 public class ChatAnswer {
+    private Long answerId;
     private Long interviewId;
     private Long questionId;
     private Long userId;

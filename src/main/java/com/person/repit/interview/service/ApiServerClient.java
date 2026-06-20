@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
+import tools.jackson.databind.ObjectMapper;
 
 @Component
 public class ApiServerClient {
@@ -18,6 +19,19 @@ public class ApiServerClient {
     }
 
     public void saveInterviewResult(ChatInterviewResultSaveRequest request, String authorization) {
+
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+
+            System.out.println("===== REQUEST JSON =====");
+            System.out.println(
+                    mapper.writerWithDefaultPrettyPrinter()
+                            .writeValueAsString(request)
+            );
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
         restClient.post()
                 .uri("/api/interviews/result")
                 .contentType(MediaType.APPLICATION_JSON)

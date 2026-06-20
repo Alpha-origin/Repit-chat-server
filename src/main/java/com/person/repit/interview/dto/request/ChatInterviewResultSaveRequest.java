@@ -9,6 +9,7 @@ import lombok.Builder;
 import lombok.Getter;
 
 import java.util.List;
+import java.util.Optional;
 
 @Getter
 @Builder
@@ -18,8 +19,8 @@ public class ChatInterviewResultSaveRequest {
     private Long interviewId;
     private Long userId;
     private InterviewStatus status;
-    private List<QuestionResult> questions;
-    private List<AnswerResult> answers;
+    private List<Long> questions;
+    private List<Long> answers;
 
     public static ChatInterviewResultSaveRequest from(ChatInterviewSession session) {
         return ChatInterviewResultSaveRequest.builder()
@@ -27,50 +28,18 @@ public class ChatInterviewResultSaveRequest {
                 .interviewId(session.getInterviewId())
                 .userId(session.getUserId())
                 .status(session.getStatus())
-                .questions(session.getQuestions().stream().map(QuestionResult::from).toList())
-                .answers(session.getAnswers().stream().map(AnswerResult::from).toList())
+                .questions(Optional.ofNullable(session.getQuestions())
+                        .orElse(List.of())
+                        .stream()
+                        .map(ChatQuestion::getQuestionId)
+                        .toList()
+                )
+                .answers(Optional.ofNullable(session.getAnswers())
+                        .orElse(List.of())
+                        .stream()
+                        .map(ChatAnswer::getAnswerId)
+                        .toList()
+                )
                 .build();
-    }
-
-    @Getter
-    @Builder
-    public static class QuestionResult {
-
-        private Long questionId;
-        private Long parentId;
-        private QuestionType type;
-        private String intention;
-        private String content;
-
-        public static QuestionResult from(ChatQuestion question) {
-            return QuestionResult.builder()
-                    .questionId(question.getQuestionId())
-                    .parentId(question.getParentId())
-                    .type(question.getType())
-                    .intention(question.getIntention())
-                    .content(question.getContent())
-                    .build();
-        }
-    }
-
-    @Getter
-    @Builder
-    public static class AnswerResult {
-
-        private Long interviewId;
-        private Long questionId;
-        private Long userId;
-        private Integer responseTime;
-        private String content;
-
-        public static AnswerResult from(ChatAnswer answer) {
-            return AnswerResult.builder()
-                    .interviewId(answer.getInterviewId())
-                    .questionId(answer.getQuestionId())
-                    .userId(answer.getUserId())
-                    .responseTime(answer.getResponseTime())
-                    .content(answer.getContent())
-                    .build();
-        }
     }
 }
