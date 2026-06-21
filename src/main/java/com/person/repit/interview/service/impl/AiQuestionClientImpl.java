@@ -41,12 +41,15 @@ public class AiQuestionClientImpl implements AiQuestionClient {
     @Override
     public FollowQuestionAiResponse decideFollowQuestion(FollowQuestionAiRequest request) {
         try {
-            JsonNode response = restClient.post()
+            String body = restClient.post()
                     .uri("/v1/messages")
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(createRequestBody(request))
                     .retrieve()
-                    .body(JsonNode.class);
+                    .body(String.class);
+
+            JsonNode response = objectMapper.readTree(body);
+
             log.info("AI RESPONSE = {}", response);
 
             String text = extractText(response);
