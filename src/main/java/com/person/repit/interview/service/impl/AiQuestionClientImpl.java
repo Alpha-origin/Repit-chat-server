@@ -47,6 +47,7 @@ public class AiQuestionClientImpl implements AiQuestionClient {
                     .body(createRequestBody(request))
                     .retrieve()
                     .body(JsonNode.class);
+            log.info("AI RESPONSE = {}", response);
 
             String text = extractText(response);
 
