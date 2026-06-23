@@ -9,6 +9,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
+import java.util.UUID;
 
 @Getter
 @NoArgsConstructor
@@ -28,7 +29,5 @@ public class ChatInterviewPrepareRequest {
     @NotNull
     private InterviewStyle personaType;
 
-    @Valid
-    @NotEmpty
-    private List<ChatQuestionPrepareRequest> questions;
+    private UUID jobId;
 }

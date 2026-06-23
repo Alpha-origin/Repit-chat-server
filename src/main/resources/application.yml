@@ -9,4 +9,8 @@ spring:
 
 repit:
   api-server:
-    base-url: http://localhost:8080
+    base-url: https://api.team-alpha.org
+
+anthropic:
+  api-key: ${ANTHROPIC_API_KEY}
+  model: ${ANTHROPIC_MODEL:claude-sonnet-4-6}
