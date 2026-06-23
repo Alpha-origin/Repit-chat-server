@@ -25,15 +25,26 @@ public class ApiServerClient {
 
     public MockInterviewResponse getMockInterview(UUID jobId) {
 
-        return restClient.get()
-                .uri(uriBuilder ->
-                        uriBuilder
-                                .path("/api/v1/ai")
-                                .queryParam("jobId", jobId)
-                                .build()
-                )
-                .retrieve()
-                .body(MockInterviewResponse.class);
+        System.out.println("jobId = " + jobId);
+
+        MockInterviewResponse response =
+                restClient.get()
+                        .uri("/api/v1/ai?jobId={jobId}", jobId)
+                        .retrieve()
+                        .body(MockInterviewResponse.class);
+
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+
+            System.out.println(
+                    mapper.writerWithDefaultPrettyPrinter()
+                            .writeValueAsString(response)
+            );
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return response;
     }
 
     public void saveInterviewResult(
