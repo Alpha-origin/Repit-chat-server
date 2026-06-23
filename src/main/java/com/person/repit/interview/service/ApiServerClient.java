@@ -26,7 +26,10 @@ public class ApiServerClient {
     public MockInterviewResponse getMockInterview(UUID jobId) {
 
         return restClient.get()
-                .uri("/api/v1/ai/{jobId}", jobId)
+                .uri(uriBuilder -> uriBuilder
+                        .path("/api/v1/ai")
+                        .queryParam("jobId", jobId)
+                        .build())
                 .retrieve()
                 .body(MockInterviewResponse.class);
     }
