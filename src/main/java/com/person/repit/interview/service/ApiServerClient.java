@@ -1,12 +1,12 @@
 package com.person.repit.interview.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.person.repit.interview.dto.request.ChatInterviewResultSaveRequest;
 import com.person.repit.interview.dto.response.MockInterviewResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
-import tools.jackson.databind.ObjectMapper;
 
 import java.util.UUID;
 
@@ -25,26 +25,25 @@ public class ApiServerClient {
 
     public MockInterviewResponse getMockInterview(UUID jobId) {
 
-        System.out.println("jobId = " + jobId);
-
-        MockInterviewResponse response =
+        String rawResponse =
                 restClient.get()
                         .uri("/api/v1/ai?jobId={jobId}", jobId)
                         .retrieve()
-                        .body(MockInterviewResponse.class);
+                        .body(String.class);
+
+        System.out.println("========== RAW RESPONSE ==========");
+        System.out.println(rawResponse);
+
+        ObjectMapper mapper = new ObjectMapper();
 
         try {
-            ObjectMapper mapper = new ObjectMapper();
-
-            System.out.println(
-                    mapper.writerWithDefaultPrettyPrinter()
-                            .writeValueAsString(response)
+            return mapper.readValue(
+                    rawResponse,
+                    MockInterviewResponse.class
             );
         } catch (Exception e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
-
-        return response;
     }
 
     public void saveInterviewResult(
