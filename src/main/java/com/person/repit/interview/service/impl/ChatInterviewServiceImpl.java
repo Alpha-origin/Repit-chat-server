@@ -53,14 +53,13 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
                 );
 
         List<ChatQuestion> questions =
-                mockInterview.getResult()
+                mockInterview.getData()
+                        .getResult()
                         .getInterview()
                         .stream()
                         .map(q ->
                                 ChatQuestion.builder()
-                                        .questionId(
-                                                q.getId().longValue()
-                                        )
+                                        .questionId(q.getId().longValue())
                                         .parentId(null)
                                         .type(QuestionType.ORIGINAL)
                                         .intention(q.getCategory())
