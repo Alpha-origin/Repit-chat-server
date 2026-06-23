@@ -4,10 +4,7 @@ import com.person.repit.interview.dto.request.ChatAnswerRequest;
 import com.person.repit.interview.dto.request.ChatInterviewPrepareRequest;
 import com.person.repit.interview.dto.request.ChatInterviewResultSaveRequest;
 import com.person.repit.interview.dto.request.FollowQuestionAiRequest;
-import com.person.repit.interview.dto.response.ChatInterviewResponse;
-import com.person.repit.interview.dto.response.ChatProgressResponse;
-import com.person.repit.interview.dto.response.ChatQuestionResponse;
-import com.person.repit.interview.dto.response.FollowQuestionAiResponse;
+import com.person.repit.interview.dto.response.*;
 import com.person.repit.interview.model.ChatAnswer;
 import com.person.repit.interview.model.ChatInterviewSession;
 import com.person.repit.interview.model.ChatQuestion;
@@ -50,16 +47,28 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
             throw new IllegalArgumentException("이미 존재하는 세션입니다.");
         }
 
-        List<ChatQuestion> questions = request.getQuestions().stream()
-                .map(q -> ChatQuestion.builder()
-                        .questionId(q.getQuestionId())
-                        .parentId(null)
-                        .type(QuestionType.ORIGINAL)
-                        .intention(q.getIntention())
-                        .content(q.getContent())
-                        .createdAt(LocalDateTime.now())
-                        .build())
-                .toList();
+        MockInterviewResponse mockInterview =
+                apiServerClient.getMockInterview(
+                        request.getJobId()
+                );
+
+        List<ChatQuestion> questions =
+                mockInterview.getResult()
+                        .getInterview()
+                        .stream()
+                        .map(q ->
+                                ChatQuestion.builder()
+                                        .questionId(
+                                                q.getId().longValue()
+                                        )
+                                        .parentId(null)
+                                        .type(QuestionType.ORIGINAL)
+                                        .intention(q.getCategory())
+                                        .content(q.getQuestion())
+                                        .createdAt(LocalDateTime.now())
+                                        .build()
+                        )
+                        .toList();
 
         ChatInterviewSession session = ChatInterviewSession.builder()
                 .sessionId(request.getSessionId())
