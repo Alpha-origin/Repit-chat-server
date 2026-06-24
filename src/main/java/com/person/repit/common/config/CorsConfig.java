@@ -17,9 +17,15 @@ public class CorsConfig {
                 registry.addMapping("/**")
                         .allowedOrigins(
                                 "http://localhost:5173",
-                                "https://repit-web-git-feat-45-interview-end-page-han0911s-projects.vercel.app"
+                                "https://repit-web-git-feat-45-interview-end-page-han0911s-projects.vercel.app")
+                        .allowedMethods(
+                                "GET",
+                                "POST",
+                                "PUT",
+                                "DELETE",
+                                "PATCH",
+                                "OPTIONS"
                         )
-                        .allowedMethods("*")
                         .allowedHeaders("*")
                         .allowCredentials(true);
             }
