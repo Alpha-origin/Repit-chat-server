@@ -43,6 +43,8 @@ public class ApiServerClient {
                 jobId
         );
 
+        log.info("AUTH HEADER = {}", authorization);
+
         String rawResponse =
                 restClient.get()
                         .uri("/api/v1/ai?jobId={jobId}", jobId)
