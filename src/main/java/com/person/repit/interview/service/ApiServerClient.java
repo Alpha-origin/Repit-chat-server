@@ -3,6 +3,7 @@ package com.person.repit.interview.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.person.repit.interview.dto.request.ChatInterviewResultSaveRequest;
 import com.person.repit.interview.dto.response.MockInterviewResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -10,6 +11,7 @@ import org.springframework.web.client.RestClient;
 
 import java.util.UUID;
 
+@Slf4j
 @Component
 public class ApiServerClient {
 
@@ -24,6 +26,8 @@ public class ApiServerClient {
     }
 
     public MockInterviewResponse getMockInterview(UUID jobId) {
+
+        log.info("AI REQUEST jobId={}", jobId);
 
         String rawResponse =
                 restClient.get()

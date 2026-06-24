@@ -40,6 +40,14 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
 
     @Override
     public ChatInterviewResponse prepareInterview(ChatInterviewPrepareRequest request) {
+        log.info("jobId={}", request.getJobId());
+
+        log.info(
+                "sessionId={}, interviewId={}, jobId={}",
+                request.getSessionId(),
+                request.getInterviewId(),
+                request.getJobId()
+        );
 
         String key = createKey(request.getSessionId());
 
@@ -51,6 +59,13 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
                 apiServerClient.getMockInterview(
                         request.getJobId()
                 );
+
+        log.info("mockInterview={}", mockInterview);
+        log.info("data={}", mockInterview.getData());
+
+        if (mockInterview.getData() != null) {
+            log.info("result={}", mockInterview.getData().getResult());
+        }
 
         List<ChatQuestion> questions =
                 mockInterview.getData()
