@@ -16,19 +16,32 @@ import java.util.UUID;
 public class ApiServerClient {
 
     private final RestClient restClient;
+    private final String baseUrl;
 
     public ApiServerClient(
             @Value("${repit.api-server.base-url}") String baseUrl
     ) {
+        this.baseUrl = baseUrl;
+
         log.info("API SERVER URL = {}", baseUrl);
+
         this.restClient = RestClient.builder()
                 .baseUrl(baseUrl)
                 .build();
     }
 
-    public MockInterviewResponse getMockInterview(UUID jobId, String authorization) {
+    public MockInterviewResponse getMockInterview(
+            UUID jobId,
+            String authorization
+    ) {
 
         log.info("AI REQUEST jobId={}", jobId);
+
+        log.info(
+                "REQUEST URL = {}/api/v1/ai?jobId={}",
+                baseUrl,
+                jobId
+        );
 
         String rawResponse =
                 restClient.get()
@@ -37,8 +50,7 @@ public class ApiServerClient {
                         .retrieve()
                         .body(String.class);
 
-        System.out.println("========== RAW RESPONSE ==========");
-        System.out.println(rawResponse);
+        log.info("RAW RESPONSE = {}", rawResponse);
 
         ObjectMapper mapper = new ObjectMapper();
 
@@ -48,6 +60,7 @@ public class ApiServerClient {
                     MockInterviewResponse.class
             );
         } catch (Exception e) {
+            log.error("JSON PARSE ERROR", e);
             throw new RuntimeException(e);
         }
     }
