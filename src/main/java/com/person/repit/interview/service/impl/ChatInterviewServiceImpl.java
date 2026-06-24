@@ -39,7 +39,7 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
 
 
     @Override
-    public ChatInterviewResponse prepareInterview(ChatInterviewPrepareRequest request) {
+    public ChatInterviewResponse prepareInterview(ChatInterviewPrepareRequest request, String authorization) {
         log.info("jobId={}", request.getJobId());
 
         log.info(
@@ -57,7 +57,8 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
 
         MockInterviewResponse mockInterview =
                 apiServerClient.getMockInterview(
-                        request.getJobId()
+                        request.getJobId(),
+                        authorization
                 );
 
         log.info("===== MOCK INTERVIEW CHECK =====");

@@ -20,18 +20,20 @@ public class ApiServerClient {
     public ApiServerClient(
             @Value("${repit.api-server.base-url}") String baseUrl
     ) {
+        log.info("API SERVER URL = {}", baseUrl);
         this.restClient = RestClient.builder()
                 .baseUrl(baseUrl)
                 .build();
     }
 
-    public MockInterviewResponse getMockInterview(UUID jobId) {
+    public MockInterviewResponse getMockInterview(UUID jobId, String authorization) {
 
         log.info("AI REQUEST jobId={}", jobId);
 
         String rawResponse =
                 restClient.get()
                         .uri("/api/v1/ai?jobId={jobId}", jobId)
+                        .header("Authorization", authorization)
                         .retrieve()
                         .body(String.class);
 
