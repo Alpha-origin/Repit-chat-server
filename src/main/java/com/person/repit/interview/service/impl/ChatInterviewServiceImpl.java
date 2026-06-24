@@ -60,11 +60,42 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
                         request.getJobId()
                 );
 
-        log.info("mockInterview={}", mockInterview);
-        log.info("data={}", mockInterview.getData());
+        log.info("===== MOCK INTERVIEW CHECK =====");
+        log.info("response={}", mockInterview);
 
-        if (mockInterview.getData() != null) {
-            log.info("result={}", mockInterview.getData().getResult());
+        if (mockInterview == null) {
+            log.error("mockInterview is null");
+        }
+
+        if (mockInterview != null && mockInterview.getData() == null) {
+            log.error("data is null");
+        }
+
+        if (mockInterview != null
+                && mockInterview.getData() != null
+                && mockInterview.getData().getResult() == null) {
+            log.error("result is null");
+        }
+
+        if (mockInterview != null
+                && mockInterview.getData() != null
+                && mockInterview.getData().getResult() != null) {
+
+            log.info(
+                    "question count={}",
+                    mockInterview.getData()
+                            .getResult()
+                            .getInterview()
+                            .size()
+            );
+        }
+
+        if (mockInterview.getData() == null
+                || mockInterview.getData().getResult() == null) {
+
+            throw new IllegalStateException(
+                    "API 서버에서 result가 null로 반환됨"
+            );
         }
 
         List<ChatQuestion> questions =
