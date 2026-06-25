@@ -1,37 +1,70 @@
 package com.person.repit.interview.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.person.repit.interview.dto.request.ChatInterviewResultSaveRequest;
 import com.person.repit.interview.dto.response.MockInterviewResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
-import tools.jackson.databind.ObjectMapper;
 
 import java.util.UUID;
 
+@Slf4j
 @Component
 public class ApiServerClient {
 
     private final RestClient restClient;
+    private final String baseUrl;
 
     public ApiServerClient(
             @Value("${repit.api-server.base-url}") String baseUrl
     ) {
+        this.baseUrl = baseUrl;
+
+        log.info("API SERVER URL = {}", baseUrl);
+
         this.restClient = RestClient.builder()
                 .baseUrl(baseUrl)
                 .build();
     }
 
-    public MockInterviewResponse getMockInterview(UUID jobId) {
+    public MockInterviewResponse getMockInterview(
+            UUID jobId,
+            String authorization
+    ) {
 
-        return restClient.get()
-                .uri(uriBuilder -> uriBuilder
-                        .path("/api/v1/ai")
-                        .queryParam("jobId", jobId)
-                        .build())
-                .retrieve()
-                .body(MockInterviewResponse.class);
+        log.info("AI REQUEST jobId={}", jobId);
+
+        log.info(
+                "REQUEST URL = {}/api/v1/ai?jobId={}",
+                baseUrl,
+                jobId
+        );
+
+        log.info("AUTH HEADER = {}", authorization);
+
+        String rawResponse =
+                restClient.get()
+                        .uri("/api/v1/ai?jobId={jobId}", jobId)
+                        .header("Authorization", authorization)
+                        .retrieve()
+                        .body(String.class);
+
+        log.info("RAW RESPONSE = {}", rawResponse);
+
+        ObjectMapper mapper = new ObjectMapper();
+
+        try {
+            return mapper.readValue(
+                    rawResponse,
+                    MockInterviewResponse.class
+            );
+        } catch (Exception e) {
+            log.error("JSON PARSE ERROR", e);
+            throw new RuntimeException(e);
+        }
     }
 
     public void saveInterviewResult(
