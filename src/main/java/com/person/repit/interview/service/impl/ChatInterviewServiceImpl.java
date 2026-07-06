@@ -32,6 +32,8 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
     private static final String KEY_PREFIX = "chat:interview:";
     private static final Duration SESSION_TTL = Duration.ofHours(3);
     private static final AtomicLong followQuestionId = new AtomicLong(-1);
+    private static final int ORIGINAL_QUESTIONS_PER_FOLLOW = 2;
+
 
     private final AiQuestionClient aiQuestionClient;
     private final RedisTemplate<String, Object> redisTemplate;
@@ -175,25 +177,28 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
 
         log.info("[ANSWER SAVED] qId={}", currentQuestion.getQuestionId());
 
-        FollowQuestionAiResponse aiResponse;
+        FollowQuestionAiResponse aiResponse = FollowQuestionAiResponse.notRequired();
 
-        try {
-            aiResponse = aiQuestionClient.decideFollowQuestion(
-                    FollowQuestionAiRequest.of(
-                            session.getSessionId(),
-                            session.getInterviewId(),
-                            session.getUserId(),
-                            session.getPersonaId(),
-                            session.getPersonaType(),
-                            currentQuestion,
-                            request.getContent(),
-                            request.getResponseTime()
-                    )
-            );
-
-        } catch (Exception e) {
-            log.error("[AI ERROR]", e);
-            aiResponse = FollowQuestionAiResponse.notRequired();
+        if (canCreateFollowQuestion(session, currentQuestion)) {
+            try {
+                aiResponse = aiQuestionClient.decideFollowQuestion(
+                        FollowQuestionAiRequest.of(
+                                session.getSessionId(),
+                                session.getInterviewId(),
+                                session.getUserId(),
+                                session.getPersonaId(),
+                                session.getPersonaType(),
+                                currentQuestion,
+                                request.getContent(),
+                                request.getResponseTime()
+                        )
+                );
+            } catch (Exception e) {
+                log.error("[AI ERROR]", e);
+                aiResponse = FollowQuestionAiResponse.notRequired();
+            }
+        } else {
+            log.info("[FOLLOW SKIPPED] follow question limit reached or current question is follow-up");
         }
 
         log.info("[AI RESULT] required={}", aiResponse.getRequired());
@@ -292,6 +297,30 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
 
     private void deleteSession(String sessionId) {
         redisTemplate.delete(createKey(sessionId));
+    }
+
+    private boolean canCreateFollowQuestion(ChatInterviewSession session, ChatQuestion currentQuestion) {
+        if (currentQuestion.getType() == QuestionType.FOLLOW) {
+            return false;
+        }
+
+        return countFollowQuestions(session) < maxFollowQuestionCount(session);
+    }
+
+    private long maxFollowQuestionCount(ChatInterviewSession session) {
+        return countOriginalQuestions(session) / ORIGINAL_QUESTIONS_PER_FOLLOW;
+    }
+
+    private long countOriginalQuestions(ChatInterviewSession session) {
+        return session.getQuestions().stream()
+                .filter(question -> question.getType() == QuestionType.ORIGINAL)
+                .count();
+    }
+
+    private long countFollowQuestions(ChatInterviewSession session) {
+        return session.getQuestions().stream()
+                .filter(question -> question.getType() == QuestionType.FOLLOW)
+                .count();
     }
 
     private String createKey(String sessionId) {
