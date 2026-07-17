@@ -5,6 +5,10 @@ import com.person.repit.interview.dto.request.ChatInterviewPrepareRequest;
 import com.person.repit.interview.dto.request.ChatInterviewResultSaveRequest;
 import com.person.repit.interview.dto.request.FollowQuestionAiRequest;
 import com.person.repit.interview.dto.response.*;
+import com.person.repit.interview.exception.AlreadyExistedSessionException;
+import com.person.repit.interview.exception.ApiServerResponseException;
+import com.person.repit.interview.exception.InterviewAnswerNotFoundException;
+import com.person.repit.interview.exception.InterviewQuestionNotFoundException;
 import com.person.repit.interview.model.ChatAnswer;
 import com.person.repit.interview.model.ChatInterviewSession;
 import com.person.repit.interview.model.ChatQuestion;
@@ -54,7 +58,7 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
         String key = createKey(request.getSessionId());
 
         if (Boolean.TRUE.equals(redisTemplate.hasKey(key))) {
-            throw new IllegalArgumentException("이미 존재하는 세션입니다.");
+            throw new AlreadyExistedSessionException("이미 존재하는 세션입니다.");
         }
 
         MockInterviewResponse mockInterview =
@@ -96,9 +100,7 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
         if (mockInterview.getData() == null
                 || mockInterview.getData().getResult() == null) {
 
-            throw new IllegalStateException(
-                    "API 서버에서 result가 null로 반환됨"
-            );
+            throw new ApiServerResponseException("API 서버에서 result가 null로 반환");
         }
 
         List<ChatQuestion> questions =
@@ -143,7 +145,7 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
         ChatQuestion question = session.getCurrentQuestion();
 
         if (question == null) {
-            throw new IllegalArgumentException("질문 없음");
+            throw new InterviewQuestionNotFoundException("질문이 null");
         }
 
         return ChatQuestionResponse.from(question);
@@ -161,7 +163,7 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
         }
 
         if (!currentQuestion.getQuestionId().equals(request.getQuestionId())) {
-            throw new IllegalArgumentException("질문 불일치");
+            throw new IllegalArgumentException("현재 질문과 요청한 질문이 일치하지 않습니다.");
         }
 
         ChatAnswer answer = ChatAnswer.builder()
