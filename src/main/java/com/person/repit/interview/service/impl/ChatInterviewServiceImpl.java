@@ -5,10 +5,7 @@ import com.person.repit.interview.dto.request.ChatInterviewPrepareRequest;
 import com.person.repit.interview.dto.request.ChatInterviewResultSaveRequest;
 import com.person.repit.interview.dto.request.FollowQuestionAiRequest;
 import com.person.repit.interview.dto.response.*;
-import com.person.repit.interview.exception.AlreadyExistedSessionException;
-import com.person.repit.interview.exception.ApiServerResponseException;
-import com.person.repit.interview.exception.InterviewAnswerNotFoundException;
-import com.person.repit.interview.exception.InterviewQuestionNotFoundException;
+import com.person.repit.interview.exception.*;
 import com.person.repit.interview.model.ChatAnswer;
 import com.person.repit.interview.model.ChatInterviewSession;
 import com.person.repit.interview.model.ChatQuestion;
@@ -145,7 +142,7 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
         ChatQuestion question = session.getCurrentQuestion();
 
         if (question == null) {
-            throw new InterviewQuestionNotFoundException("질문이 null");
+            throw new InterviewQuestionNotFoundException("질문이 null로 반환 됨");
         }
 
         return ChatQuestionResponse.from(question);
@@ -163,7 +160,7 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
         }
 
         if (!currentQuestion.getQuestionId().equals(request.getQuestionId())) {
-            throw new IllegalArgumentException("현재 질문과 요청한 질문이 일치하지 않습니다.");
+            throw new InterviewQuestionNotFoundException("현재 질문과 요청한 질문이 일치하지 않습니다.");
         }
 
         ChatAnswer answer = ChatAnswer.builder()
@@ -282,8 +279,11 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
     private ChatInterviewSession getSession(String sessionId) {
         Object value = redisTemplate.opsForValue().get(createKey(sessionId));
 
+        if (value == null) {
+            throw new InterviewSessionNotFoundException("면접 세션을 찾을 수 없습니다.");
+        }
         if (!(value instanceof ChatInterviewSession session)) {
-            throw new IllegalArgumentException("세션 없음");
+            throw new InterviewSessionDataException("저장된 세션 데이터를 읽을 수 없습니다.");
         }
 
         return session;
