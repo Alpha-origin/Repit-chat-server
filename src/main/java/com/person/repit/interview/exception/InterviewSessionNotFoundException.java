@@ -2,8 +2,8 @@ package com.person.repit.interview.exception;
 
 import com.person.repit.common.exception.NotFoundException;
 
-public class InterviewNotFoundException extends NotFoundException {
-    public InterviewNotFoundException(String message) {
+public class InterviewSessionNotFoundException extends NotFoundException {
+    public InterviewSessionNotFoundException(String message) {
         super(message);
     }
 }

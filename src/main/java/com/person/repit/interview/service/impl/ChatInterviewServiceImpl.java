@@ -5,6 +5,7 @@ import com.person.repit.interview.dto.request.ChatInterviewPrepareRequest;
 import com.person.repit.interview.dto.request.ChatInterviewResultSaveRequest;
 import com.person.repit.interview.dto.request.FollowQuestionAiRequest;
 import com.person.repit.interview.dto.response.*;
+import com.person.repit.interview.exception.*;
 import com.person.repit.interview.model.ChatAnswer;
 import com.person.repit.interview.model.ChatInterviewSession;
 import com.person.repit.interview.model.ChatQuestion;
@@ -54,7 +55,7 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
         String key = createKey(request.getSessionId());
 
         if (Boolean.TRUE.equals(redisTemplate.hasKey(key))) {
-            throw new IllegalArgumentException("이미 존재하는 세션입니다.");
+            throw new InterviewSessionAlreadyExistsException("이미 존재하는 세션입니다.");
         }
 
         MockInterviewResponse mockInterview =
@@ -67,39 +68,32 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
         log.info("response={}", mockInterview);
 
         if (mockInterview == null) {
-            log.error("mockInterview is null");
+            log.error("MockInterview is null");
+            throw new ApiServerResponseException("면접 정보를 불러 올 수 없습니다.");
         }
 
-        if (mockInterview != null && mockInterview.getData() == null) {
-            log.error("data is null");
+        if (mockInterview.getData() == null) {
+            log.error("MockInterview Data is null");
+            throw new ApiServerResponseException("면접 정보를 불러 올 수 없습니다.");
         }
 
-        if (mockInterview != null
-                && mockInterview.getData() != null
-                && mockInterview.getData().getResult() == null) {
-            log.error("result is null");
+        if (mockInterview.getData().getResult() == null) {
+            log.error("MockInterview Data Result is null");
+            throw new ApiServerResponseException("면접 정보를 불러 올 수 없습니다.");
         }
 
-        if (mockInterview != null
-                && mockInterview.getData() != null
-                && mockInterview.getData().getResult() != null) {
-
-            log.info(
-                    "question count={}",
-                    mockInterview.getData()
-                            .getResult()
-                            .getInterview()
-                            .size()
-            );
+        if (mockInterview.getData().getResult().getInterview() == null) {
+            log.error("MockInterview Data Result Interview is null");
+            throw new ApiServerResponseException("면접 정보를 불러올 수 없습니다.");
         }
 
-        if (mockInterview.getData() == null
-                || mockInterview.getData().getResult() == null) {
-
-            throw new IllegalStateException(
-                    "API 서버에서 result가 null로 반환됨"
-            );
-        }
+        log.info(
+                "question count={}",
+                mockInterview.getData()
+                        .getResult()
+                        .getInterview()
+                        .size()
+        );
 
         List<ChatQuestion> questions =
                 mockInterview.getData()
@@ -143,7 +137,7 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
         ChatQuestion question = session.getCurrentQuestion();
 
         if (question == null) {
-            throw new IllegalArgumentException("질문 없음");
+            throw new InterviewQuestionNotFoundException("질문이 null로 반환 됨");
         }
 
         return ChatQuestionResponse.from(question);
@@ -161,7 +155,7 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
         }
 
         if (!currentQuestion.getQuestionId().equals(request.getQuestionId())) {
-            throw new IllegalArgumentException("질문 불일치");
+            throw new InterviewQuestionMismatchException("현재 질문과 요청한 질문이 일치하지 않습니다.");
         }
 
         ChatAnswer answer = ChatAnswer.builder()
@@ -280,10 +274,12 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
     private ChatInterviewSession getSession(String sessionId) {
         Object value = redisTemplate.opsForValue().get(createKey(sessionId));
 
-        if (!(value instanceof ChatInterviewSession session)) {
-            throw new IllegalArgumentException("세션 없음");
+        if (value == null) {
+            throw new InterviewSessionNotFoundException("면접 세션을 찾을 수 없습니다.");
         }
-
+        if (!(value instanceof ChatInterviewSession session)) {
+            throw new InterviewSessionDataException("면접 세션 데이터가 올바르지 않습니다.");
+        }
         return session;
     }
 
