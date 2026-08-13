@@ -9,16 +9,6 @@ import lombok.NoArgsConstructor;
 @Getter
 @NoArgsConstructor
 public class ChatWebSocketMessageRequest {
-
     @NotNull
     private MessageType type;
-
-    @NotNull
-    private Long questionId;
-
-    @NotNull
-    private Integer responseTime;
-
-    @NotBlank
-    private String content;
 }
