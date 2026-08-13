@@ -110,24 +110,12 @@ public class ChatInterviewWebSocketHandler extends TextWebSocketHandler {
 
             if (answerMessageRequest.getContent().isBlank()) {
                 send(session, ChatWebSocketMessageResponse.error("답변 내용이 존재하지 않습니다."));
+                return;
             }
         }
 
 
 
-
-        if (request.getType() == MessageType.ANSWER) {
-            if (request.getQuestionId() == null
-                    || request.getContent() == null
-                    || request.getContent().isBlank()) {
-                send(session, ChatWebSocketMessageResponse.error("질문 ID와 답변 내용이 필요합니다."));
-                return;
-            }
-
-            ChatAnswerRequest answerRequest = ChatAnswerRequest.from(request);
-            ChatProgressResponse progress = chatInterviewService.submitAnswer(sessionId, answerRequest);
-
-            send(session, ChatWebSocketMessageResponse.progress(progress));
 
             if (progress.getQuestion() == null) {
                 session.close(CloseStatus.NORMAL);
