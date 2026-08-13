@@ -18,12 +18,4 @@ public class ChatAnswerRequest {
 
     @NotBlank
     private String content;
-
-    public static ChatAnswerRequest from(ChatWebSocketMessageRequest request) {
-        return ChatAnswerRequest.builder()
-                .questionId(request.getQuestionId())
-                .responseTime(request.getResponseTime())
-                .content(request.getContent())
-                .build();
-    }
 }

@@ -3,6 +3,7 @@ package com.person.repit.interview.websocket;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.person.repit.common.type.MessageType;
 import com.person.repit.interview.dto.request.ChatAnswerRequest;
+import com.person.repit.interview.dto.request.ChatWebSocketAnswerMessageRequest;
 import com.person.repit.interview.dto.request.ChatWebSocketMessageRequest;
 import com.person.repit.interview.dto.response.ChatProgressResponse;
 import com.person.repit.interview.dto.response.ChatQuestionResponse;
@@ -78,6 +79,42 @@ public class ChatInterviewWebSocketHandler extends TextWebSocketHandler {
             send(session, ChatWebSocketMessageResponse.error("메시지 타입이 필요합니다."));
             return;
         }
+
+        if (request.getType() == MessageType.ANSWER) {
+            ChatWebSocketAnswerMessageRequest answerMessageRequest;
+
+            try {
+                answerMessageRequest = objectMapper.readValue(
+                        message.getPayload(),
+                        ChatWebSocketAnswerMessageRequest.class
+                );
+            } catch (Exception exception) {
+                send(session, ChatWebSocketMessageResponse.error("답변 메세지 형식이 올바르지 않습니다."));
+                return;
+            }
+
+            if (answerMessageRequest.getQuestionId() == null) {
+                send(session, ChatWebSocketMessageResponse.error("질문 ID가 존재하지 않습니다."));
+                return;
+            }
+
+            if (answerMessageRequest.getResponseTime() == null) {
+                send(session, ChatWebSocketMessageResponse.error("답변 응답 시간이 존재하지 않습니다."));
+                return;
+            }
+
+            if (answerMessageRequest.getContent() == null) {
+                send(session, ChatWebSocketMessageResponse.error("답변 내용이 존재하지 않습니다."));
+                return;
+            }
+
+            if (answerMessageRequest.getContent().isBlank()) {
+                send(session, ChatWebSocketMessageResponse.error("답변 내용이 존재하지 않습니다."));
+            }
+        }
+
+
+
 
         if (request.getType() == MessageType.ANSWER) {
             if (request.getQuestionId() == null
