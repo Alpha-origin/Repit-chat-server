@@ -62,10 +62,31 @@ public class ChatInterviewWebSocketHandler extends TextWebSocketHandler {
             return;
         }
 
-        ChatWebSocketMessageRequest request =
-                objectMapper.readValue(message.getPayload(), ChatWebSocketMessageRequest.class);
+        ChatWebSocketMessageRequest request;
+
+        try {
+            request = objectMapper.readValue(
+                    message.getPayload(),
+                    ChatWebSocketMessageRequest.class
+            );
+        } catch (Exception exception) {
+            send(session, ChatWebSocketMessageResponse.error("메시지 형식이 올바르지 않습니다."));
+            return;
+        }
+
+        if (request.getType() == null) {
+            send(session, ChatWebSocketMessageResponse.error("메시지 타입이 필요합니다."));
+            return;
+        }
 
         if (request.getType() == MessageType.ANSWER) {
+            if (request.getQuestionId() == null
+                    || request.getContent() == null
+                    || request.getContent().isBlank()) {
+                send(session, ChatWebSocketMessageResponse.error("질문 ID와 답변 내용이 필요합니다."));
+                return;
+            }
+
             ChatAnswerRequest answerRequest = ChatAnswerRequest.from(request);
             ChatProgressResponse progress = chatInterviewService.submitAnswer(sessionId, answerRequest);
 

@@ -1,14 +1,11 @@
 package com.person.repit.interview.dto.request;
 
 import com.person.repit.interview.type.InterviewStyle;
-import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.util.List;
 import java.util.UUID;
 
 @Getter
@@ -29,5 +26,6 @@ public class ChatInterviewPrepareRequest {
     @NotNull
     private InterviewStyle personaType;
 
+    @NotNull
     private UUID jobId;
 }

@@ -17,11 +17,14 @@ public class ApiServerClient {
 
     private final RestClient restClient;
     private final String baseUrl;
+    private final ObjectMapper objectMapper;
 
     public ApiServerClient(
-            @Value("${repit.api-server.base-url}") String baseUrl
+            @Value("${repit.api-server.base-url}") String baseUrl,
+            ObjectMapper objectMapper
     ) {
         this.baseUrl = baseUrl;
+        this.objectMapper = objectMapper;
 
         log.info("API SERVER URL = {}", baseUrl);
 
@@ -50,12 +53,8 @@ public class ApiServerClient {
                         .retrieve()
                         .body(String.class);
 
-        log.info("RAW RESPONSE = {}", rawResponse);
-
-        ObjectMapper mapper = new ObjectMapper();
-
         try {
-            return mapper.readValue(
+            return objectMapper.readValue(
                     rawResponse,
                     MockInterviewResponse.class
             );
