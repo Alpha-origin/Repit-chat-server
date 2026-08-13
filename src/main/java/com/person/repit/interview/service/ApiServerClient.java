@@ -43,8 +43,6 @@ public class ApiServerClient {
                 jobId
         );
 
-        log.info("AUTH HEADER = {}", authorization);
-
         String rawResponse =
                 restClient.get()
                         .uri("/api/v1/ai?jobId={jobId}", jobId)
@@ -68,15 +66,13 @@ public class ApiServerClient {
     }
 
     public void saveInterviewResult(
-            ChatInterviewResultSaveRequest request,
-            String authorization
+            ChatInterviewResultSaveRequest request
     ) {
 
         restClient.post()
                 .uri("/api/interviews/result")
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(request)
-                .header("Authorization", authorization)
                 .retrieve()
                 .toBodilessEntity();
     }

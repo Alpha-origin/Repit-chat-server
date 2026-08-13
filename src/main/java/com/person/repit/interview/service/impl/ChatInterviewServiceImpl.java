@@ -224,10 +224,7 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
 
             session.setStatus(InterviewStatus.COMPLETED);
 
-            apiServerClient.saveInterviewResult(
-                    ChatInterviewResultSaveRequest.from(session),
-                    "anything"
-            );
+            apiServerClient.saveInterviewResult(ChatInterviewResultSaveRequest.from(session));
 
             deleteSession(sessionId);
 
@@ -246,8 +243,7 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
         session.setStatus(InterviewStatus.COMPLETED);
 
         apiServerClient.saveInterviewResult(
-                ChatInterviewResultSaveRequest.from(session),
-                "anything"
+                ChatInterviewResultSaveRequest.from(session)
         );
 
         deleteSession(sessionId);
@@ -262,8 +258,7 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
         session.setStatus(InterviewStatus.ABANDONED);
 
         apiServerClient.saveInterviewResult(
-                ChatInterviewResultSaveRequest.from(session),
-                "anything"
+                ChatInterviewResultSaveRequest.from(session)
         );
 
         deleteSession(sessionId);
