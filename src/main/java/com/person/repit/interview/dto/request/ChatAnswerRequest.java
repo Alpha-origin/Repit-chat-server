@@ -13,6 +13,7 @@ public class ChatAnswerRequest {
     @NotNull
     private Long questionId;
 
+    @NotNull
     private Integer responseTime;
 
     @NotBlank
