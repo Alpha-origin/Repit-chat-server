@@ -58,7 +58,7 @@ public class ChatInterviewWebSocketHandler extends TextWebSocketHandler {
         String sessionId = sessionIdMap.get(session.getId());
 
         if (sessionId == null) {
-            send(session, ChatWebSocketMessageResponse.error("유효하지 않은 웹소켓 세션입니다."));
+            send(session, ChatWebSocketMessageResponse.error("현재 연결에 등록된 면접 세션이 없습니다."));
             session.close(CloseStatus.BAD_DATA);
             return;
         }
@@ -112,10 +112,12 @@ public class ChatInterviewWebSocketHandler extends TextWebSocketHandler {
                 send(session, ChatWebSocketMessageResponse.error("답변 내용이 존재하지 않습니다."));
                 return;
             }
-        }
 
+            ChatAnswerRequest answerRequest = answerMessageRequest.toChatAnswerRequest();
 
+            ChatProgressResponse progress = chatInterviewService.submitAnswer(sessionId, answerRequest);
 
+            send(session, ChatWebSocketMessageResponse.progress(progress));
 
             if (progress.getQuestion() == null) {
                 session.close(CloseStatus.NORMAL);
