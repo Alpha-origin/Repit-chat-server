@@ -5,6 +5,8 @@ import com.person.repit.interview.model.ChatInterviewSession;
 import com.person.repit.interview.model.ChatQuestion;
 import com.person.repit.interview.type.InterviewStatus;
 import com.person.repit.interview.type.QuestionType;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -15,11 +17,22 @@ import java.util.Optional;
 @Builder
 public class ChatInterviewResultSaveRequest {
 
+    @NotBlank
     private String sessionId;
+
+    @NotNull
     private Long interviewId;
+
+    @NotNull
     private Long userId;
+
+    @NotNull
     private InterviewStatus status;
+
+    @NotNull
     private List<Long> questions;
+
+    @NotNull
     private List<Long> answers;
 
     public static ChatInterviewResultSaveRequest from(ChatInterviewSession session) {

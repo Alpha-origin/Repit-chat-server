@@ -13,16 +13,9 @@ public class ChatAnswerRequest {
     @NotNull
     private Long questionId;
 
+    @NotNull
     private Integer responseTime;
 
     @NotBlank
     private String content;
-
-    public static ChatAnswerRequest from(ChatWebSocketMessageRequest request) {
-        return ChatAnswerRequest.builder()
-                .questionId(request.getQuestionId())
-                .responseTime(request.getResponseTime())
-                .content(request.getContent())
-                .build();
-    }
 }

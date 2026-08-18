@@ -50,11 +50,7 @@ public class AiQuestionClientImpl implements AiQuestionClient {
 
             JsonNode response = objectMapper.readTree(body);
 
-            log.info("AI RESPONSE = {}", response);
-
             String text = extractText(response);
-
-            log.info("[AI RAW TEXT] {}", text);
 
             if (text == null || text.isBlank()) {
                 return FollowQuestionAiResponse.notRequired();
@@ -62,15 +58,8 @@ public class AiQuestionClientImpl implements AiQuestionClient {
 
             String json = cleanJson(text);
 
-            log.info("[AI CLEAN JSON] {}", json);
-
             FollowQuestionAiResponse result =
                     objectMapper.readValue(json, FollowQuestionAiResponse.class);
-
-            log.info("[AI PARSED RESULT] required={}, content={}",
-                    result.getRequired(),
-                    result.getContent()
-            );
 
             if (result.getRequired() == null) {
                 result = FollowQuestionAiResponse.notRequired();
