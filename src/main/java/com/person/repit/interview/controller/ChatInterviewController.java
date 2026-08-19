@@ -2,6 +2,7 @@ package com.person.repit.interview.controller;
 
 import com.person.repit.interview.dto.request.ChatAnswerRequest;
 import com.person.repit.interview.dto.request.ChatInterviewPrepareRequest;
+import com.person.repit.interview.dto.response.ChatInterviewAllResponse;
 import com.person.repit.interview.dto.response.ChatInterviewResponse;
 import com.person.repit.interview.dto.response.ChatProgressResponse;
 import com.person.repit.interview.dto.response.ChatQuestionResponse;
@@ -22,6 +23,11 @@ public class ChatInterviewController {
             @RequestHeader("Authorization") String authorization
     ) {
         return chatInterviewService.prepareInterview(request, authorization);
+    }
+
+    @GetMapping("/{sessionId}/interview")
+    public ChatInterviewAllResponse getInterview(@PathVariable String sessionId) {
+        return chatInterviewService.getInterview(sessionId);
     }
 
     @GetMapping("/{sessionId}/question")
