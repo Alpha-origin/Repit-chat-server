@@ -18,6 +18,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -41,6 +42,7 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
 
 
     @Override
+    @Transactional
     public ChatInterviewResponse prepareInterview(ChatInterviewPrepareRequest request, String authorization) {
         log.info("jobId={}", request.getJobId());
 
@@ -130,6 +132,13 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public ChatInterviewAllResponse getInterview(String sessionId) {
+        return null;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public ChatQuestionResponse getCurrentQuestion(String sessionId) {
         ChatInterviewSession session = getSession(sessionId);
 
@@ -143,6 +152,7 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public ChatProgressResponse submitAnswer(String sessionId, ChatAnswerRequest request) {
 
         ChatInterviewSession session = getSession(sessionId);
@@ -236,6 +246,7 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public ChatProgressResponse completeInterview(String sessionId) {
         ChatInterviewSession session = getSession(sessionId);
 
@@ -251,6 +262,7 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public ChatProgressResponse quitInterview(String sessionId) {
         ChatInterviewSession session = getSession(sessionId);
 
