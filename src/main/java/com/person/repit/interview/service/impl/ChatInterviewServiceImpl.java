@@ -134,7 +134,9 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
     @Override
     @Transactional(readOnly = true)
     public ChatInterviewAllResponse getInterview(String sessionId) {
-        return null;
+        ChatInterviewSession session = getSession(sessionId);
+
+        return ChatInterviewAllResponse.from(session);
     }
 
     @Override
@@ -152,7 +154,7 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public ChatProgressResponse submitAnswer(String sessionId, ChatAnswerRequest request) {
 
         ChatInterviewSession session = getSession(sessionId);
@@ -246,7 +248,7 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public ChatProgressResponse completeInterview(String sessionId) {
         ChatInterviewSession session = getSession(sessionId);
 
@@ -262,7 +264,7 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public ChatProgressResponse quitInterview(String sessionId) {
         ChatInterviewSession session = getSession(sessionId);
 
