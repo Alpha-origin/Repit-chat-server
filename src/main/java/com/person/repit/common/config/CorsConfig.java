@@ -15,9 +15,11 @@ public class CorsConfig {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/**")
-                        .allowedOrigins(
+                        .allowedOriginPatterns(
                                 "http://localhost:5173",
-                                "https://repit-web-git-feat-45-interview-end-page-han0911s-projects.vercel.app")
+                                "https://repit-web.vercel.app",
+                                "https://repit-web-*.vercel.app"
+                        )
                         .allowedMethods(
                                 "GET",
                                 "POST",

@@ -25,7 +25,7 @@ public class ChatInterviewController {
         return chatInterviewService.prepareInterview(request, authorization);
     }
 
-    @GetMapping("/{sessionId}/interview")
+    @GetMapping("/{sessionId}")
     public ChatInterviewAllResponse getInterview(@PathVariable String sessionId) {
         return chatInterviewService.getInterview(sessionId);
     }
