@@ -1,4 +1,4 @@
-package com.person.repit.interview.dto.response;
+package com.person.repit.interview.dto.request;
 
 import com.person.repit.interview.model.ChatAnswer;
 import com.person.repit.interview.model.ChatInterviewSession;
@@ -17,18 +17,18 @@ import java.util.stream.Collectors;
 
 @Getter
 @Builder
-public class ChatInterviewAllResponse {
+public class ChatInterviewAllRequest {
+
     private String sessionId;
     private Long interviewId;
     private Long userId;
     private Long personaId;
     private InterviewStyle personaType;
     private InterviewStatus status;
-    private int currentQuestionIndex;
-    private LocalDateTime createdAt;
-    private List<ChatInterviewQnAResponse> qnAResponses;
+    private LocalDateTime interviewCreatedAt;
+    private List<ChatInterviewQnARequest> qnaRequests;
 
-    public static ChatInterviewAllResponse from(ChatInterviewSession session) {
+    public static ChatInterviewAllRequest from(ChatInterviewSession session) {
         Map<Long, ChatAnswer> answerByQuestionId = session.getAnswers()
                 .stream()
                 .collect(Collectors.toMap(
@@ -36,47 +36,48 @@ public class ChatInterviewAllResponse {
                         Function.identity()
                 ));
 
-        List<ChatInterviewQnAResponse> qnAResponses = session.getQuestions()
+        List<ChatInterviewQnARequest> qnaRequests = session.getQuestions()
                 .stream()
-                .map(question -> ChatInterviewQnAResponse.of(
+                .map(question -> ChatInterviewQnARequest.of(
                         question,
                         answerByQuestionId.get(question.getQuestionId())
                 ))
                 .toList();
 
-        return ChatInterviewAllResponse.builder()
+        return ChatInterviewAllRequest.builder()
                 .sessionId(session.getSessionId())
                 .interviewId(session.getInterviewId())
                 .userId(session.getUserId())
                 .personaId(session.getPersonaId())
                 .personaType(session.getPersonaType())
                 .status(session.getStatus())
-                .currentQuestionIndex(session.getCurrentQuestionIndex())
-                .createdAt(session.getCreatedAt())
-                .qnAResponses(qnAResponses)
+                .interviewCreatedAt(session.getCreatedAt())
+                .qnaRequests(qnaRequests)
                 .build();
     }
 
     @Getter
     @Builder
-    public static class ChatInterviewQnAResponse {
-        private QuestionResponse question;
-        private AnswerResponse answer;
+    public static class ChatInterviewQnARequest {
 
-        public static ChatInterviewQnAResponse of(
+        private QuestionRequest question;
+        private AnswerRequest answer;
+
+        public static ChatInterviewQnARequest of(
                 ChatQuestion question,
                 ChatAnswer answer
         ) {
-            return ChatInterviewQnAResponse.builder()
-                    .question(QuestionResponse.from(question))
-                    .answer((answer == null) ? null : AnswerResponse.from(answer))
+            return ChatInterviewQnARequest.builder()
+                    .question(QuestionRequest.from(question))
+                    .answer(answer == null ? null : AnswerRequest.from(answer))
                     .build();
         }
     }
 
     @Getter
     @Builder
-    public static class QuestionResponse {
+    public static class QuestionRequest {
+
         private Long questionId;
         private Long parentId;
         private QuestionType questionType;
@@ -84,8 +85,8 @@ public class ChatInterviewAllResponse {
         private String questionContent;
         private LocalDateTime questionCreatedAt;
 
-        public static QuestionResponse from(ChatQuestion question) {
-            return QuestionResponse.builder()
+        public static QuestionRequest from(ChatQuestion question) {
+            return QuestionRequest.builder()
                     .questionId(question.getQuestionId())
                     .parentId(question.getParentId())
                     .questionType(question.getType())
@@ -98,24 +99,20 @@ public class ChatInterviewAllResponse {
 
     @Getter
     @Builder
-    public static class AnswerResponse {
-        private Long interviewId;
+    public static class AnswerRequest {
+
         private Long questionId;
-        private Long userId;
         private Integer responseTime;
         private String answerContent;
         private LocalDateTime answerCreatedAt;
 
-        public static AnswerResponse from(ChatAnswer answer) {
-            return AnswerResponse.builder()
-                    .interviewId(answer.getInterviewId())
+        public static AnswerRequest from(ChatAnswer answer) {
+            return AnswerRequest.builder()
                     .questionId(answer.getQuestionId())
-                    .userId(answer.getUserId())
                     .responseTime(answer.getResponseTime())
                     .answerContent(answer.getContent())
                     .answerCreatedAt(answer.getCreatedAt())
                     .build();
         }
     }
-
 }
