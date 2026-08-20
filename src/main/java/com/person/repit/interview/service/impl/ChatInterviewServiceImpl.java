@@ -1,9 +1,6 @@
 package com.person.repit.interview.service.impl;
 
-import com.person.repit.interview.dto.request.ChatAnswerRequest;
-import com.person.repit.interview.dto.request.ChatInterviewPrepareRequest;
-import com.person.repit.interview.dto.request.ChatInterviewResultSaveRequest;
-import com.person.repit.interview.dto.request.FollowQuestionAiRequest;
+import com.person.repit.interview.dto.request.*;
 import com.person.repit.interview.dto.response.*;
 import com.person.repit.interview.exception.*;
 import com.person.repit.interview.model.ChatAnswer;
@@ -235,7 +232,7 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
 
             session.setStatus(InterviewStatus.COMPLETED);
 
-            apiServerClient.saveInterviewResult(ChatInterviewResultSaveRequest.from(session));
+            apiServerClient.saveInterviewResult(ChatInterviewAllRequest.from(session));
 
             deleteSession(sessionId);
 
@@ -255,7 +252,7 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
         session.setStatus(InterviewStatus.COMPLETED);
 
         apiServerClient.saveInterviewResult(
-                ChatInterviewResultSaveRequest.from(session)
+                ChatInterviewAllRequest.from(session)
         );
 
         deleteSession(sessionId);
@@ -271,7 +268,7 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
         session.setStatus(InterviewStatus.ABANDONED);
 
         apiServerClient.saveInterviewResult(
-                ChatInterviewResultSaveRequest.from(session)
+                ChatInterviewAllRequest.from(session)
         );
 
         deleteSession(sessionId);
