@@ -18,7 +18,8 @@ public class CorsConfig {
                         .allowedOriginPatterns(
                                 "http://localhost:5173",
                                 "https://repit-web.vercel.app",
-                                "https://repit-web-*.vercel.app"
+                                "https://repit-web-*.vercel.app",
+                                "https://team-alpha.org/"
                         )
                         .allowedMethods(
                                 "GET",
