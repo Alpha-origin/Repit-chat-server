@@ -99,7 +99,6 @@ public class ChatInterviewAllResponse {
     @Getter
     @Builder
     public static class AnswerResponse {
-        private Long answerId;
         private Long interviewId;
         private Long questionId;
         private Long userId;
@@ -109,7 +108,6 @@ public class ChatInterviewAllResponse {
 
         public static AnswerResponse from(ChatAnswer answer) {
             return AnswerResponse.builder()
-                    .answerId(answer.getAnswerId())
                     .interviewId(answer.getInterviewId())
                     .questionId(answer.getQuestionId())
                     .userId(answer.getUserId())
