@@ -2,8 +2,6 @@ package com.person.repit.interview.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.person.repit.interview.dto.request.ChatInterviewAllRequest;
-import com.person.repit.interview.dto.request.ChatInterviewResultSaveRequest;
-import com.person.repit.interview.dto.response.ChatInterviewAllResponse;
 import com.person.repit.interview.dto.response.MockInterviewResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;

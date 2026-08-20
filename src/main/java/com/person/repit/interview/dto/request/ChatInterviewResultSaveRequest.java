@@ -4,7 +4,6 @@ import com.person.repit.interview.model.ChatAnswer;
 import com.person.repit.interview.model.ChatInterviewSession;
 import com.person.repit.interview.model.ChatQuestion;
 import com.person.repit.interview.type.InterviewStatus;
-import com.person.repit.interview.type.QuestionType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
