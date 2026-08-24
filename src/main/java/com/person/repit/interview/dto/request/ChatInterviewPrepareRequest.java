@@ -1,5 +1,6 @@
 package com.person.repit.interview.dto.request;
 
+import com.person.repit.interview.type.InterviewLevel;
 import com.person.repit.interview.type.InterviewStyle;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -27,6 +28,9 @@ public class ChatInterviewPrepareRequest {
 
     @NotNull
     private InterviewStyle personaType;
+
+    @NotNull
+    private InterviewLevel level;
 
     @NotNull
     private UUID jobId;

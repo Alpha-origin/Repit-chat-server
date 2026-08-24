@@ -116,6 +116,7 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
                 .userId(request.getUserId())
                 .personaId(request.getPersonaId())
                 .personaType(request.getPersonaType())
+                .level(request.getLevel())
                 .status(InterviewStatus.IN_PROGRESS)
                 .questions(new ArrayList<>(questions))
                 .answers(new ArrayList<>())
