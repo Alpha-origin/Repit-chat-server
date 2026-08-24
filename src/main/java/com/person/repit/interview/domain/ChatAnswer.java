@@ -1,6 +1,5 @@
-package com.person.repit.interview.model;
+package com.person.repit.interview.domain;
 
-import com.person.repit.interview.type.QuestionType;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -10,11 +9,12 @@ import java.time.LocalDateTime;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class ChatQuestion {
+public class ChatAnswer {
+    private Long answerId;
+    private Long interviewId;
     private Long questionId;
-    private Long parentId;
-    private QuestionType type;
-    private String intention;
+    private Long userId;
+    private Integer responseTime;
     private String content;
     private LocalDateTime createdAt;
 }

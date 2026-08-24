@@ -1,6 +1,6 @@
 package com.person.repit.interview.dto.response;
 
-import com.person.repit.interview.model.ChatInterviewSession;
+import com.person.repit.interview.domain.ChatInterviewSession;
 import com.person.repit.interview.type.InterviewStatus;
 import lombok.Builder;
 import lombok.Getter;

@@ -1,8 +1,8 @@
 package com.person.repit.interview.dto.response;
 
-import com.person.repit.interview.model.ChatAnswer;
-import com.person.repit.interview.model.ChatInterviewSession;
-import com.person.repit.interview.model.ChatQuestion;
+import com.person.repit.interview.domain.ChatAnswer;
+import com.person.repit.interview.domain.ChatInterviewSession;
+import com.person.repit.interview.domain.ChatQuestion;
 import com.person.repit.interview.type.InterviewStatus;
 import com.person.repit.interview.type.InterviewStyle;
 import com.person.repit.interview.type.QuestionType;
