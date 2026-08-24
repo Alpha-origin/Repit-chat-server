@@ -191,6 +191,7 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
                                 session.getUserId(),
                                 session.getPersonaId(),
                                 session.getPersonaType(),
+                                session.getLevel(),
                                 currentQuestion,
                                 request.getContent(),
                                 request.getResponseTime()

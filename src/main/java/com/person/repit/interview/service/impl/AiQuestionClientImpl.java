@@ -124,6 +124,31 @@ public class AiQuestionClientImpl implements AiQuestionClient {
                 """;
     }
 
+    private String createLevelStructure(FollowQuestionAiRequest request) {
+        return switch (request.getLevel()) {
+            case null -> """
+                    중간 난이도의 꼬리질문을 생성하세요.
+                    실제 적용 방법이나 선택 근거 등을 확인하는 수준으로 질문하세요.
+                    """;
+
+            case EASY -> """
+                    쉬운 난이도의 꼬리질문을 생성하세요.
+                    지원자가 핵심 개념을 이해했는지 확인하는 수준으로 질문하세요.
+                    복잡한 내부 구현 등 어려운 질문은 하지 마세요.
+                    """;
+
+            case MEDIUM -> """
+                    중간 난이도의 꼬리질문을 생성하세요.
+                    실제 적용 방법이나 선택 근거 등을 확인하는 수준으로 질문하세요.
+                    """;
+
+            case HARD -> """
+                    어려운 난이도의 꼬리질문을 생성하세요.
+                    내부 동작 원리, 성능, 동시성 등 장애 또는 예외 상황 등에 관해 질문하세요.
+                    """;
+        };
+    }
+
     private String createUserPrompt(FollowQuestionAiRequest request) {
         return """
                 [면접 정보]
