@@ -9,6 +9,7 @@ import com.person.repit.interview.domain.ChatQuestion;
 import com.person.repit.interview.service.AiQuestionClient;
 import com.person.repit.interview.service.ApiServerClient;
 import com.person.repit.interview.service.ChatInterviewService;
+import com.person.repit.interview.type.InterviewLevel;
 import com.person.repit.interview.type.InterviewStatus;
 import com.person.repit.interview.type.QuestionType;
 import lombok.RequiredArgsConstructor;
@@ -41,62 +42,16 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
     @Override
     @Transactional
     public ChatInterviewResponse prepareInterview(ChatInterviewPrepareRequest request, String authorization) {
-        log.info("jobId={}", request.getJobId());
-
         log.info(
-                "sessionId={}, interviewId={}, jobId={}",
+                "sessionId={}, interviewId={}",
                 request.getSessionId(),
-                request.getInterviewId(),
-                request.getJobId()
+                request.getInterviewId()
         );
 
         String key = createKey(request.getSessionId());
 
-        if (Boolean.TRUE.equals(redisTemplate.hasKey(key))) {
-            throw new InterviewSessionAlreadyExistsException("이미 존재하는 세션입니다.");
-        }
-
-        MockInterviewResponse mockInterview =
-                apiServerClient.getMockInterview(
-                        request.getJobId(),
-                        authorization
-                );
-
-        log.info("===== MOCK INTERVIEW CHECK =====");
-        log.info("response={}", mockInterview);
-
-        if (mockInterview == null) {
-            log.error("MockInterview is null");
-            throw new ApiServerResponseException("면접 정보를 불러 올 수 없습니다.");
-        }
-
-        if (mockInterview.getData() == null) {
-            log.error("MockInterview Data is null");
-            throw new ApiServerResponseException("면접 정보를 불러 올 수 없습니다.");
-        }
-
-        if (mockInterview.getData().getResult() == null) {
-            log.error("MockInterview Data Result is null");
-            throw new ApiServerResponseException("면접 정보를 불러 올 수 없습니다.");
-        }
-
-        if (mockInterview.getData().getResult().getInterview() == null) {
-            log.error("MockInterview Data Result Interview is null");
-            throw new ApiServerResponseException("면접 정보를 불러올 수 없습니다.");
-        }
-
-        log.info(
-                "question count={}",
-                mockInterview.getData()
-                        .getResult()
-                        .getInterview()
-                        .size()
-        );
-
         List<ChatQuestion> questions =
-                mockInterview.getData()
-                        .getResult()
-                        .getInterview()
+                request.getQuestions()
                         .stream()
                         .map(q ->
                                 ChatQuestion.builder()
@@ -114,17 +69,22 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
                 .sessionId(request.getSessionId())
                 .interviewId(request.getInterviewId())
                 .userId(request.getUserId())
-                .personaId(request.getPersonaId())
-                .personaType(request.getPersonaType())
-                .level(request.getLevel())
-                .status(InterviewStatus.IN_PROGRESS)
+                .personaId(request.getPersona().getPersonaId())
+                .personaType(request.getPersona().getType())
+                .level(InterviewLevel.MEDIUM)
+                .status(request.getStatus())
                 .questions(new ArrayList<>(questions))
                 .answers(new ArrayList<>())
                 .currentQuestionIndex(0)
                 .createdAt(LocalDateTime.now())
                 .build();
 
-        saveSession(session);
+        Boolean created = redisTemplate.opsForValue()
+                .setIfAbsent(key, session, SESSION_TTL);
+
+        if (!Boolean.TRUE.equals(created)) {
+            return ChatInterviewResponse.from(getSession(request.getSessionId()));
+        }
 
         return ChatInterviewResponse.from(session);
     }
