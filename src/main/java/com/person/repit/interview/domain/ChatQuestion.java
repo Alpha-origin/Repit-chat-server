@@ -16,5 +16,6 @@ public class ChatQuestion {
     private QuestionType type;
     private String intention;
     private String content;
+    private Long askedByPersonaId;
     private LocalDateTime createdAt;
 }
