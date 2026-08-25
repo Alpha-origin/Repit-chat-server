@@ -3,8 +3,8 @@ package com.person.repit.interview.dto.request;
 import com.person.repit.interview.domain.ChatAnswer;
 import com.person.repit.interview.domain.ChatInterviewSession;
 import com.person.repit.interview.domain.ChatQuestion;
+import com.person.repit.interview.domain.InterviewPersona;
 import com.person.repit.interview.type.InterviewStatus;
-import com.person.repit.interview.type.InterviewStyle;
 import com.person.repit.interview.type.QuestionType;
 import lombok.Builder;
 import lombok.Getter;
@@ -22,8 +22,7 @@ public class ChatInterviewAllRequest {
     private String sessionId;
     private Long interviewId;
     private Long userId;
-    private Long personaId;
-    private InterviewStyle personaType;
+    private List<InterviewPersona> interviewers;
     private InterviewStatus status;
     private LocalDateTime interviewCreatedAt;
     private List<ChatInterviewQnARequest> qnaRequests;
@@ -48,8 +47,7 @@ public class ChatInterviewAllRequest {
                 .sessionId(session.getSessionId())
                 .interviewId(session.getInterviewId())
                 .userId(session.getUserId())
-                .personaId(session.getPersonaId())
-                .personaType(session.getPersonaType())
+                .interviewers(session.getInterviewers())
                 .status(session.getStatus())
                 .interviewCreatedAt(session.getCreatedAt())
                 .qnaRequests(qnaRequests)
@@ -83,6 +81,7 @@ public class ChatInterviewAllRequest {
         private QuestionType questionType;
         private String questionIntention;
         private String questionContent;
+        private Long askedByPersonaId;
         private LocalDateTime questionCreatedAt;
 
         public static QuestionRequest from(ChatQuestion question) {
@@ -92,6 +91,7 @@ public class ChatInterviewAllRequest {
                     .questionType(question.getType())
                     .questionIntention(question.getIntention())
                     .questionContent(question.getContent())
+                    .askedByPersonaId(question.getAskedByPersonaId())
                     .questionCreatedAt(question.getCreatedAt())
                     .build();
         }
