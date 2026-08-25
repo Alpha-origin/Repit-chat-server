@@ -3,7 +3,6 @@ package com.person.repit.interview.dto.response;
 import com.person.repit.interview.domain.ChatAnswer;
 import com.person.repit.interview.domain.ChatInterviewSession;
 import com.person.repit.interview.domain.ChatQuestion;
-import com.person.repit.interview.domain.InterviewPersona;
 import com.person.repit.interview.type.InterviewStatus;
 import com.person.repit.interview.type.QuestionType;
 import lombok.Builder;
@@ -21,7 +20,6 @@ public class ChatInterviewAllResponse {
     private String sessionId;
     private Long interviewId;
     private Long userId;
-    private List<InterviewPersona> interviewers;
     private InterviewStatus status;
     private int currentQuestionIndex;
     private LocalDateTime createdAt;
@@ -47,7 +45,6 @@ public class ChatInterviewAllResponse {
                 .sessionId(session.getSessionId())
                 .interviewId(session.getInterviewId())
                 .userId(session.getUserId())
-                .interviewers(session.getInterviewers())
                 .status(session.getStatus())
                 .currentQuestionIndex(session.getCurrentQuestionIndex())
                 .createdAt(session.getCreatedAt())
@@ -80,7 +77,7 @@ public class ChatInterviewAllResponse {
         private QuestionType questionType;
         private String questionIntention;
         private String questionContent;
-        private Long askedByPersonaId;
+        private Long personaId;
         private LocalDateTime questionCreatedAt;
 
         public static QuestionResponse from(ChatQuestion question) {
@@ -90,7 +87,7 @@ public class ChatInterviewAllResponse {
                     .questionType(question.getType())
                     .questionIntention(question.getIntention())
                     .questionContent(question.getContent())
-                    .askedByPersonaId(question.getAskedByPersonaId())
+                    .personaId(question.getAskedByPersonaId())
                     .questionCreatedAt(question.getCreatedAt())
                     .build();
         }

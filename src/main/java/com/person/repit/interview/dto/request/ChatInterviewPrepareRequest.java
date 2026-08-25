@@ -32,27 +32,7 @@ public class ChatInterviewPrepareRequest {
 
     @Valid
     @NotEmpty
-    private List<Persona> interviewers;
-
-    @Valid
-    @NotEmpty
     private List<Question> questions;
-
-    @Getter
-    @Setter
-    @NoArgsConstructor
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class Persona {
-
-        @NotNull
-        private Long personaId;
-
-        @NotBlank
-        private String personaName;
-
-        @NotBlank
-        private String interviewRole;
-    }
 
     @Getter
     @Setter
@@ -69,6 +49,6 @@ public class ChatInterviewPrepareRequest {
         private String question;
 
         @NotNull
-        private Long askedByPersonaId;
+        private Long personaId;
     }
 }

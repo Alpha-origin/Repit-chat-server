@@ -14,7 +14,6 @@ public class FollowQuestionAiRequest {
     private Long interviewId;
     private Long userId;
     private Long personaId;
-    private String interviewerRole;
     private InterviewLevel level;
 
     private Long questionId;
@@ -31,7 +30,6 @@ public class FollowQuestionAiRequest {
             Long interviewId,
             Long userId,
             Long personaId,
-            String interviewerRole,
             InterviewLevel level,
             ChatQuestion question,
             String answerContent,
@@ -42,7 +40,6 @@ public class FollowQuestionAiRequest {
                 .interviewId(interviewId)
                 .userId(userId)
                 .personaId(personaId)
-                .interviewerRole(interviewerRole)
                 .level(level)
                 .questionId(question.getQuestionId())
                 .parentId(question.getParentId())
