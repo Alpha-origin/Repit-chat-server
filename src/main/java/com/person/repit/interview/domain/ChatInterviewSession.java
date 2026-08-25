@@ -20,9 +20,6 @@ public class ChatInterviewSession {
     private InterviewLevel level;
 
     @Builder.Default
-    private List<InterviewPersona> interviewers = new ArrayList<>();
-
-    @Builder.Default
     private InterviewStatus status = InterviewStatus.IN_PROGRESS;
 
     @Builder.Default

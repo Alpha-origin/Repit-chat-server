@@ -164,7 +164,6 @@ public class AiQuestionClientImpl implements AiQuestionClient {
                 interviewId: %d
                 userId: %d
                 personaId: %d
-                personaType: %s
 
                 [현재 질문]
                 questionId: %d
@@ -183,7 +182,6 @@ public class AiQuestionClientImpl implements AiQuestionClient {
                 request.getInterviewId(),
                 request.getUserId(),
                 request.getPersonaId(),
-                request.getPersonaType(),
                 request.getQuestionId(),
                 request.getParentId(),
                 request.getQuestionType(),

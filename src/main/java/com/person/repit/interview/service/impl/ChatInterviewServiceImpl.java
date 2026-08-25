@@ -1,6 +1,5 @@
 package com.person.repit.interview.service.impl;
 
-import com.person.repit.interview.domain.InterviewPersona;
 import com.person.repit.interview.dto.request.*;
 import com.person.repit.interview.dto.response.*;
 import com.person.repit.interview.exception.*;
@@ -61,26 +60,16 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
                                         .type(QuestionType.ORIGINAL)
                                         .intention(q.getCategory())
                                         .content(q.getQuestion())
-                                        .askedByPersonaId(q.getAskedByPersonaId())
+                                        .askedByPersonaId(q.getPersonaId())
                                         .createdAt(LocalDateTime.now())
                                         .build()
                         )
                         .toList();
 
-        List<InterviewPersona> interviewers = request.getInterviewers()
-                .stream()
-                .map(persona -> InterviewPersona.builder()
-                        .personaId(persona.getPersonaId())
-                        .interviewerName(persona.getPersonaName())
-                        .interviewerRole(persona.getInterviewRole())
-                        .build())
-                .toList();
-
         ChatInterviewSession session = ChatInterviewSession.builder()
                 .sessionId(request.getSessionId())
                 .interviewId(request.getInterviewId())
                 .userId(request.getUserId())
-                .interviewers(new ArrayList<>(interviewers))
                 .level(InterviewLevel.MEDIUM)
                 .status(request.getStatus())
                 .questions(new ArrayList<>(questions))
@@ -159,8 +148,7 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
                                 session.getSessionId(),
                                 session.getInterviewId(),
                                 session.getUserId(),
-                                session.getPersonaId(),
-                                session.getPersonaType(),
+                                currentQuestion.getAskedByPersonaId(),
                                 session.getLevel(),
                                 currentQuestion,
                                 request.getContent(),
@@ -185,6 +173,7 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
                     .type(QuestionType.FOLLOW)
                     .intention(aiResponse.getIntention())
                     .content(aiResponse.getContent())
+                    .askedByPersonaId(currentQuestion.getAskedByPersonaId())
                     .createdAt(LocalDateTime.now())
                     .build();
 
