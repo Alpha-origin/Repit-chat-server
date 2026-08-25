@@ -18,11 +18,8 @@ public class ChatInterviewController {
     private final ChatInterviewService chatInterviewService;
 
     @PostMapping
-    public ChatInterviewResponse prepareInterview(
-            @Valid @RequestBody ChatInterviewPrepareRequest request,
-            @RequestHeader("Authorization") String authorization
-    ) {
-        return chatInterviewService.prepareInterview(request, authorization);
+    public ChatInterviewResponse prepareInterview(@Valid @RequestBody ChatInterviewPrepareRequest request) {
+        return chatInterviewService.prepareInterview(request);
     }
 
     @GetMapping("/{sessionId}")

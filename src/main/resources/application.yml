@@ -9,7 +9,7 @@ spring:
 
 repit:
   api-server:
-    base-url: https://api.team-alpha.org
+    base-url: https://wildcat-startle-rope.ngrok-free.dev
 
 anthropic:
   api-key: ${ANTHROPIC_API_KEY}
