@@ -69,8 +69,6 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
                 .sessionId(request.getSessionId())
                 .interviewId(request.getInterviewId())
                 .userId(request.getUserId())
-                .personaId(request.getPersona().getPersonaId())
-                .personaType(request.getPersona().getType())
                 .level(InterviewLevel.MEDIUM)
                 .status(request.getStatus())
                 .questions(new ArrayList<>(questions))

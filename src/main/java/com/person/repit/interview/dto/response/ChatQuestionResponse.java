@@ -13,6 +13,7 @@ public class ChatQuestionResponse {
     private QuestionType type;
     private String intention;
     private String content;
+    private Long askedByPersonaId;
 
     public static ChatQuestionResponse from(ChatQuestion question) {
         return ChatQuestionResponse.builder()
@@ -21,6 +22,7 @@ public class ChatQuestionResponse {
                 .type(question.getType())
                 .intention(question.getIntention())
                 .content(question.getContent())
+                .askedByPersonaId(question.getAskedByPersonaId())
                 .build();
     }
 }

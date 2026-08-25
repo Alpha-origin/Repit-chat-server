@@ -52,9 +52,6 @@ public class ChatInterviewPrepareRequest {
 
         @NotBlank
         private String interviewRole;
-
-        @NotNull
-        private Long askedByPersonaId;
     }
 
     @Getter
@@ -70,5 +67,8 @@ public class ChatInterviewPrepareRequest {
 
         @NotBlank
         private String question;
+
+        @NotNull
+        private Long askedByPersonaId;
     }
 }
