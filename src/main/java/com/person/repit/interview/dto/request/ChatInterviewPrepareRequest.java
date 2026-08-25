@@ -2,7 +2,6 @@ package com.person.repit.interview.dto.request;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.person.repit.interview.type.InterviewStatus;
-import com.person.repit.interview.type.InterviewStyle;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;

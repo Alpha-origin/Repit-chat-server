@@ -2,7 +2,6 @@ package com.person.repit.interview.domain;
 
 import com.person.repit.interview.type.InterviewLevel;
 import com.person.repit.interview.type.InterviewStatus;
-import com.person.repit.interview.type.InterviewStyle;
 import lombok.*;
 
 import java.time.LocalDateTime;
