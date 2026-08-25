@@ -8,7 +8,7 @@ import com.person.repit.interview.dto.response.ChatProgressResponse;
 import com.person.repit.interview.dto.response.ChatQuestionResponse;
 
 public interface ChatInterviewService {
-    ChatInterviewResponse prepareInterview(ChatInterviewPrepareRequest request, String authorization);
+    ChatInterviewResponse prepareInterview(ChatInterviewPrepareRequest request);
 
     ChatInterviewAllResponse getInterview(String sessionId);
 

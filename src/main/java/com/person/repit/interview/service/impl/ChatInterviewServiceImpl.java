@@ -41,7 +41,7 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
 
     @Override
     @Transactional
-    public ChatInterviewResponse prepareInterview(ChatInterviewPrepareRequest request, String authorization) {
+    public ChatInterviewResponse prepareInterview(ChatInterviewPrepareRequest request) {
         log.info(
                 "sessionId={}, interviewId={}",
                 request.getSessionId(),
