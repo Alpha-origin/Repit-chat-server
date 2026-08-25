@@ -2,7 +2,6 @@ package com.person.repit.interview.domain;
 
 import com.person.repit.interview.type.InterviewLevel;
 import com.person.repit.interview.type.InterviewStatus;
-import com.person.repit.interview.type.InterviewStyle;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -18,8 +17,6 @@ public class ChatInterviewSession {
     private String sessionId;
     private Long interviewId;
     private Long userId;
-    private Long personaId;
-    private InterviewStyle personaType;
     private InterviewLevel level;
 
     @Builder.Default

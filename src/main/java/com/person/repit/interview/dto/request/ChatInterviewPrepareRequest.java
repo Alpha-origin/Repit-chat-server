@@ -2,7 +2,6 @@ package com.person.repit.interview.dto.request;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.person.repit.interview.type.InterviewStatus;
-import com.person.repit.interview.type.InterviewStyle;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
@@ -32,25 +31,8 @@ public class ChatInterviewPrepareRequest {
     private InterviewStatus status;
 
     @Valid
-    @NotNull
-    private Persona persona;
-
-    @Valid
     @NotEmpty
     private List<Question> questions;
-
-    @Getter
-    @Setter
-    @NoArgsConstructor
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class Persona {
-
-        @NotNull
-        private Long personaId;
-
-        @NotNull
-        private InterviewStyle type;
-    }
 
     @Getter
     @Setter
@@ -65,5 +47,8 @@ public class ChatInterviewPrepareRequest {
 
         @NotBlank
         private String question;
+
+        @NotNull
+        private Long personaId;
     }
 }

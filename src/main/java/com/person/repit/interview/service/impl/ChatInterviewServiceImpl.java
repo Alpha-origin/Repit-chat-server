@@ -60,6 +60,7 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
                                         .type(QuestionType.ORIGINAL)
                                         .intention(q.getCategory())
                                         .content(q.getQuestion())
+                                        .askedByPersonaId(q.getPersonaId())
                                         .createdAt(LocalDateTime.now())
                                         .build()
                         )
@@ -69,8 +70,6 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
                 .sessionId(request.getSessionId())
                 .interviewId(request.getInterviewId())
                 .userId(request.getUserId())
-                .personaId(request.getPersona().getPersonaId())
-                .personaType(request.getPersona().getType())
                 .level(InterviewLevel.MEDIUM)
                 .status(request.getStatus())
                 .questions(new ArrayList<>(questions))
@@ -149,8 +148,7 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
                                 session.getSessionId(),
                                 session.getInterviewId(),
                                 session.getUserId(),
-                                session.getPersonaId(),
-                                session.getPersonaType(),
+                                currentQuestion.getAskedByPersonaId(),
                                 session.getLevel(),
                                 currentQuestion,
                                 request.getContent(),
@@ -175,6 +173,7 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
                     .type(QuestionType.FOLLOW)
                     .intention(aiResponse.getIntention())
                     .content(aiResponse.getContent())
+                    .askedByPersonaId(currentQuestion.getAskedByPersonaId())
                     .createdAt(LocalDateTime.now())
                     .build();
 
