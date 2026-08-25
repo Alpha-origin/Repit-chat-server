@@ -32,8 +32,8 @@ public class ChatInterviewPrepareRequest {
     private InterviewStatus status;
 
     @Valid
-    @NotNull
-    private Persona persona;
+    @NotEmpty
+    private List<Persona> interviewers;
 
     @Valid
     @NotEmpty
@@ -48,8 +48,14 @@ public class ChatInterviewPrepareRequest {
         @NotNull
         private Long personaId;
 
+        @NotBlank
+        private String personaName;
+
+        @NotBlank
+        private String interviewRole;
+
         @NotNull
-        private InterviewStyle type;
+        private Long askedByPersonaId;
     }
 
     @Getter
