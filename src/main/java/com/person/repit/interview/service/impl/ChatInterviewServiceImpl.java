@@ -22,7 +22,7 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
+import java.util.concurrent.atomic.AtomicLong;
 
 @Service
 @RequiredArgsConstructor
@@ -32,6 +32,7 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
     private static final String KEY_PREFIX = "chat:interview:";
     private static final Duration SESSION_TTL = Duration.ofHours(3);
     private static final int ORIGINAL_QUESTIONS_PER_FOLLOW = 2;
+    private static final AtomicLong FOLLOW_QUESTION_SEQUENCE = new AtomicLong(-1);
 
 
     private final AiQuestionClient aiQuestionClient;
@@ -60,6 +61,8 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
                                         .type(QuestionType.ORIGINAL)
                                         .intention(q.getCategory())
                                         .content(q.getQuestion())
+                                        .expectedAnswer(q.getExpectedAnswer())
+                                        .basedOn(q.getBasedOn())
                                         .askedByPersonaId(q.getPersonaId())
                                         .createdAt(LocalDateTime.now())
                                         .build()
@@ -290,6 +293,6 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
     }
 
     private long createFollowQuestionId() {
-        return UUID.randomUUID().getMostSignificantBits() | Long.MIN_VALUE;
+        return FOLLOW_QUESTION_SEQUENCE.getAndDecrement();
     }
 }

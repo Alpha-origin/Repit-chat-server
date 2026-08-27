@@ -4,6 +4,7 @@ import com.person.repit.interview.type.QuestionType;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Getter
 @Setter
@@ -16,6 +17,8 @@ public class ChatQuestion {
     private QuestionType type;
     private String intention;
     private String content;
+    private String expectedAnswer;
+    private List<String> basedOn;
     private Long askedByPersonaId;
     private LocalDateTime createdAt;
 }

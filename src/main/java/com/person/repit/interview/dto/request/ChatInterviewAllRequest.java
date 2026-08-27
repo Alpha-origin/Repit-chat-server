@@ -4,7 +4,6 @@ import com.person.repit.interview.domain.ChatAnswer;
 import com.person.repit.interview.domain.ChatInterviewSession;
 import com.person.repit.interview.domain.ChatQuestion;
 import com.person.repit.interview.type.InterviewStatus;
-import com.person.repit.interview.type.QuestionType;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -73,23 +72,21 @@ public class ChatInterviewAllRequest {
     @Builder
     public static class QuestionRequest {
 
-        private Long questionId;
-        private Long parentId;
-        private QuestionType questionType;
-        private String questionIntention;
-        private String questionContent;
+        private Long id;
         private Long personaId;
-        private LocalDateTime questionCreatedAt;
+        private String category;
+        private String question;
+        private String expectedAnswer;
+        private List<String> basedOn;
 
         public static QuestionRequest from(ChatQuestion question) {
             return QuestionRequest.builder()
-                    .questionId(question.getQuestionId())
-                    .parentId(question.getParentId())
-                    .questionType(question.getType())
-                    .questionIntention(question.getIntention())
-                    .questionContent(question.getContent())
+                    .id(question.getQuestionId())
                     .personaId(question.getAskedByPersonaId())
-                    .questionCreatedAt(question.getCreatedAt())
+                    .category(question.getIntention())
+                    .question(question.getContent())
+                    .expectedAnswer(question.getExpectedAnswer())
+                    .basedOn(question.getBasedOn())
                     .build();
         }
     }
