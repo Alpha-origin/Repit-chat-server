@@ -14,6 +14,12 @@ services:
     command:
       - --verbose
       - --disable-http2-plain
+      - --no-request-journal
+      - --container-threads
+      - "50"
+      - --async-response-enabled
+      - --async-response-threads
+      - "400"
 
   k6:
     image: grafana/k6:2.1.0
@@ -22,6 +28,7 @@ services:
     working_dir: /scripts
     volumes:
       - ./load-test:/scripts:ro
+      - ./load-test/results:/scripts/results
     extra_hosts:
       - "host.docker.internal:host-gateway"
     environment:

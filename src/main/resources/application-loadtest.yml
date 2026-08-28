@@ -4,6 +4,11 @@ spring:
       host: ${LOADTEST_REDIS_HOST:localhost}
       port: ${LOADTEST_REDIS_PORT:6380}
 
+server:
+  tomcat:
+    mbeanregistry:
+      enabled: true
+
 management:
   endpoints:
     web:
