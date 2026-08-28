@@ -7,6 +7,7 @@ import com.person.repit.interview.dto.request.FollowQuestionAiRequest;
 import com.person.repit.interview.dto.response.FollowQuestionAiResponse;
 import com.person.repit.interview.service.AiRequestConcurrencyLimiter;
 import com.person.repit.interview.service.AiQuestionClient;
+import io.netty.handler.timeout.ReadTimeoutException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -49,10 +50,15 @@ public class AiQuestionClientImpl implements AiQuestionClient {
                 concurrencyLimiter.execute(executeRequest(request))
                 )
                 .doOnError(
-                        exception -> !(exception instanceof RejectedExecutionException),
+                        exception -> !isExpectedFallback(exception),
                         exception -> log.error("[AI FAIL]", exception)
                 )
                 .onErrorReturn(FollowQuestionAiResponse.notRequired());
+    }
+
+    private boolean isExpectedFallback(Throwable exception) {
+        return exception instanceof RejectedExecutionException
+                || exception.getCause() instanceof ReadTimeoutException;
     }
 
     private Mono<FollowQuestionAiResponse> executeRequest(FollowQuestionAiRequest request) {

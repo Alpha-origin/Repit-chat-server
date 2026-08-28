@@ -16,6 +16,10 @@ management:
     tags:
       application: ${spring.application.name}
 
+logging:
+  level:
+    reactor.netty.http.client.HttpClientConnect: ERROR
+
 repit:
   api-server:
     base-url: https://wildcat-startle-rope.ngrok-free.dev
