@@ -49,7 +49,20 @@ docker compose -f docker-compose.loadtest.yml run --rm k6 run /scripts/k6/baseli
 docker compose -f docker-compose.loadtest.yml run --rm k6 run /scripts/k6/load.js
 docker compose -f docker-compose.loadtest.yml run --rm k6 run /scripts/k6/stress.js
 docker compose -f docker-compose.loadtest.yml run --rm k6 run /scripts/k6/spike.js
+docker compose -f docker-compose.loadtest.yml run --rm k6 run /scripts/k6/realistic-load.js
 ```
+
+The realistic load scenario keeps each WebSocket connection open while simulating
+a five-second user answer delay. Override the delay when needed:
+
+```bash
+ANSWER_DELAY_MS=10000 \
+docker compose -f docker-compose.loadtest.yml run --rm k6 run /scripts/k6/realistic-load.js
+```
+
+Use `load.js` to measure rapid connection churn and `realistic-load.js` to measure
+the long-lived connection pattern of actual interviews. Compare both results before
+attributing handshake failures to the server.
 
 Override the target when the application uses another port:
 
@@ -72,4 +85,9 @@ Measured k6 metrics include:
 - `repit_ws_failures`: failed interview proportion
 - `repit_ws_messages`: received WebSocket message count
 - `repit_interviews_completed`: successfully completed interview count
+- `repit_prepare_failures`: failed interview preparation requests
+- `repit_ws_handshake_failures`: failed WebSocket upgrades
+- `repit_ws_socket_timeouts`: interviews exceeding the socket timeout
+- `repit_ws_errors`: WebSocket client error events
+- `repit_ws_server_errors`: server `ERROR` messages
 - built-in `ws_connecting`, `ws_session_duration`, checks, and HTTP metrics
