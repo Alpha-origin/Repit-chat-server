@@ -14,3 +14,19 @@ services:
     command:
       - --verbose
       - --disable-http2-plain
+
+  k6:
+    image: grafana/k6:2.1.0
+    profiles:
+      - tools
+    working_dir: /scripts
+    volumes:
+      - ./load-test:/scripts:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      BASE_URL: ${BASE_URL:-http://host.docker.internal:8080}
+      WS_URL: ${WS_URL:-ws://host.docker.internal:8080}
+      VUS: ${VUS:-20}
+      DURATION: ${DURATION:-1m}
+      WS_TIMEOUT_MS: ${WS_TIMEOUT_MS:-20000}
