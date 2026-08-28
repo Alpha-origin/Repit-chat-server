@@ -25,7 +25,7 @@ export const thresholds = {
     ws_connecting: ['p(95)<2000'],
 };
 
-export function runInterview() {
+export function runInterview(answerDelayMs = ANSWER_DELAY_MS) {
     const sessionId = `k6-${__VU}-${__ITER}-${Date.now()}`;
     const prepared = prepareInterview(sessionId);
 
@@ -103,13 +103,13 @@ export function runInterview() {
                         socket.send(JSON.stringify({
                             type: 'ANSWER',
                             questionId: message.question.questionId,
-                            responseTime: Math.max(1, Math.round(ANSWER_DELAY_MS / 1000)),
+                            responseTime: Math.max(1, Math.round(answerDelayMs / 1000)),
                             content: `k6 부하 테스트 답변 ${sentAnswers}`,
                         }));
                     };
 
-                    if (ANSWER_DELAY_MS > 0) {
-                        socket.setTimeout(sendAnswer, ANSWER_DELAY_MS);
+                    if (answerDelayMs > 0) {
+                        socket.setTimeout(sendAnswer, answerDelayMs);
                     } else {
                         sendAnswer();
                     }
