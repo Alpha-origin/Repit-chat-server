@@ -174,8 +174,9 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
                     .questionId(createFollowQuestionId())
                     .parentId(currentQuestion.getQuestionId())
                     .type(QuestionType.FOLLOW)
-                    .intention(aiResponse.getIntention())
+                    .intention(currentQuestion.getIntention())
                     .content(aiResponse.getContent())
+                    .expectedAnswer(aiResponse.getExpectedAnswer())
                     .askedByPersonaId(currentQuestion.getAskedByPersonaId())
                     .createdAt(LocalDateTime.now())
                     .build();
