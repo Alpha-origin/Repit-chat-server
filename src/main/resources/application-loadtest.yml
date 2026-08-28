@@ -1,0 +1,20 @@
+spring:
+  data:
+    redis:
+      host: ${LOADTEST_REDIS_HOST:localhost}
+      port: ${LOADTEST_REDIS_PORT:6380}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+
+repit:
+  api-server:
+    base-url: ${MOCK_SERVER_URL:http://localhost:8089}
+
+anthropic:
+  base-url: ${MOCK_SERVER_URL:http://localhost:8089}
+  api-key: loadtest-api-key
+  model: loadtest-model

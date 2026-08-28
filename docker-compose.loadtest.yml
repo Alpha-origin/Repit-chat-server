@@ -1,0 +1,16 @@
+services:
+  redis-loadtest:
+    image: redis:7-alpine
+    ports:
+      - "6380:6379"
+
+  wiremock:
+    image: wiremock/wiremock:3.13.2
+    ports:
+      - "8089:8080"
+    volumes:
+      - ./load-test/wiremock/common:/home/wiremock/mappings/common:ro
+      - ./load-test/wiremock/scenarios/${MOCK_SCENARIO:-delay}:/home/wiremock/mappings/scenario:ro
+    command:
+      - --verbose
+      - --disable-http2-plain

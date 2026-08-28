@@ -30,13 +30,14 @@ public class AiQuestionClientImpl implements AiQuestionClient {
             ObjectMapper objectMapper,
             @Value("${anthropic.api-key}") String apiKey,
             @Value("${anthropic.model}") String model,
+            @Value("${anthropic.base-url:https://api.anthropic.com}") String baseUrl,
             RepitMetrics metrics
     ) {
         this.objectMapper = objectMapper;
         this.model = model;
         this.metrics = metrics;
         this.restClient = RestClient.builder()
-                .baseUrl("https://api.anthropic.com")
+                .baseUrl(baseUrl)
                 .defaultHeader("x-api-key", apiKey)
                 .defaultHeader("anthropic-version", ANTHROPIC_VERSION)
                 .build();

@@ -1,0 +1,10 @@
+{
+  "request": {
+    "method": "POST",
+    "urlPath": "/api/interviews/result"
+  },
+  "response": {
+    "status": 204,
+    "fixedDelayMilliseconds": 50
+  }
+}

@@ -21,5 +21,6 @@ repit:
     base-url: https://wildcat-startle-rope.ngrok-free.dev
 
 anthropic:
+  base-url: ${ANTHROPIC_BASE_URL:https://api.anthropic.com}
   api-key: ${ANTHROPIC_API_KEY}
   model: ${ANTHROPIC_MODEL:claude-sonnet-4-6}

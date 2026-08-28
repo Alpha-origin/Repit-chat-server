@@ -1,0 +1,39 @@
+{
+  "request": {
+    "method": "GET",
+    "urlPath": "/api/v1/ai",
+    "queryParameters": {
+      "jobId": {
+        "matches": ".+"
+      }
+    }
+  },
+  "response": {
+    "status": 200,
+    "fixedDelayMilliseconds": 50,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "jsonBody": {
+      "success": true,
+      "data": {
+        "result": {
+          "interview": [
+            {
+              "id": 1,
+              "category": "java",
+              "question": "JVM 메모리 구조를 설명해주세요.",
+              "expected_answer": "JVM의 주요 메모리 영역과 역할을 설명한다."
+            },
+            {
+              "id": 2,
+              "category": "spring",
+              "question": "Spring Bean 생명주기를 설명해주세요.",
+              "expected_answer": "Bean 생성부터 소멸까지의 주요 단계를 설명한다."
+            }
+          ]
+        }
+      }
+    }
+  }
+}
