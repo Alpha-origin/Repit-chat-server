@@ -35,13 +35,6 @@ public class ApiServerClient {
                 .build();
     }
 
-    public MockInterviewResponse getMockInterview(
-            UUID jobId,
-            String authorization
-    ) {
-        return getMockInterviewReactive(jobId, authorization).block();
-    }
-
     public Mono<MockInterviewResponse> getMockInterviewReactive(
             UUID jobId,
             String authorization
@@ -62,12 +55,6 @@ public class ApiServerClient {
                         .retrieve()
                         .bodyToMono(MockInterviewResponse.class)
         );
-    }
-
-    public void saveInterviewResult(
-            ChatInterviewAllRequest request
-    ) {
-        saveInterviewResultReactive(request).block();
     }
 
     public Mono<Void> saveInterviewResultReactive(ChatInterviewAllRequest request) {
