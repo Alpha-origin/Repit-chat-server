@@ -5,8 +5,5 @@ import com.person.repit.interview.dto.response.FollowQuestionAiResponse;
 import reactor.core.publisher.Mono;
 
 public interface AiQuestionClient {
-
-    FollowQuestionAiResponse decideFollowQuestion(FollowQuestionAiRequest request);
-
     Mono<FollowQuestionAiResponse> decideFollowQuestionReactive(FollowQuestionAiRequest request);
 }

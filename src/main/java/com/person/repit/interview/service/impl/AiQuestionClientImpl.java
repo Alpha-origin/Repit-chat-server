@@ -46,13 +46,6 @@ public class AiQuestionClientImpl implements AiQuestionClient {
     }
 
     @Override
-    public FollowQuestionAiResponse decideFollowQuestion(FollowQuestionAiRequest request) {
-        return decideFollowQuestionReactive(request)
-                .blockOptional()
-                .orElseGet(FollowQuestionAiResponse::notRequired);
-    }
-
-    @Override
     public Mono<FollowQuestionAiResponse> decideFollowQuestionReactive(FollowQuestionAiRequest request) {
         return metrics.recordAnthropicRequest(executeRequest(request))
                 .doOnError(exception -> log.error("[AI FAIL]", exception))
