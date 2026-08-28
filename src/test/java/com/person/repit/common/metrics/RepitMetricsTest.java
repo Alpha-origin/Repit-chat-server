@@ -3,6 +3,7 @@ package com.person.repit.common.metrics;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import reactor.core.publisher.Mono;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -63,5 +64,23 @@ class RepitMetricsTest {
         assertThat(registry.get("repit.api.server.request.duration").timer().count()).isEqualTo(1);
         assertThat(registry.get("repit.redis.read.duration").timer().count()).isEqualTo(1);
         assertThat(registry.get("repit.redis.write.duration").timer().count()).isEqualTo(1);
+    }
+
+    @Test
+    void recordsReactiveExternalIoDurationsAndOutcomes() {
+        String response = metrics.recordAnthropicRequest(Mono.just("response")).block();
+        metrics.recordApiServerRequest(Mono.just("saved")).block();
+
+        assertThat(response).isEqualTo("response");
+        assertThat(registry.get("repit.anthropic.request.duration").timer().count()).isEqualTo(1);
+        assertThat(registry.get("repit.anthropic.requests.success").counter().count()).isEqualTo(1);
+        assertThat(registry.get("repit.api.server.request.duration").timer().count()).isEqualTo(1);
+
+        assertThatThrownBy(() -> metrics.recordAnthropicRequest(
+                Mono.<String>error(new IllegalStateException("failure"))
+        ).block()).isInstanceOf(IllegalStateException.class);
+
+        assertThat(registry.get("repit.anthropic.requests.failure").counter().count()).isEqualTo(1);
+        assertThat(registry.get("repit.anthropic.request.duration").timer().count()).isEqualTo(2);
     }
 }
