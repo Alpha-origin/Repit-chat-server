@@ -5,6 +5,7 @@ import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import org.springframework.stereotype.Component;
+import reactor.core.publisher.Mono;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
@@ -88,12 +89,26 @@ public class RepitMetrics {
         }
     }
 
+    public <T> Mono<T> recordAnthropicRequest(Mono<T> operation) {
+        return Mono.defer(() -> {
+            Timer.Sample sample = Timer.start();
+            return operation
+                    .doOnSuccess(ignored -> successfulAnthropicRequests.increment())
+                    .doOnError(ignored -> failedAnthropicRequests.increment())
+                    .doFinally(ignored -> sample.stop(anthropicRequestTimer));
+        });
+    }
+
     public <T> T recordApiServerRequest(Supplier<T> operation) {
         return apiServerRequestTimer.record(operation);
     }
 
     public void recordApiServerRequest(Runnable operation) {
         apiServerRequestTimer.record(operation);
+    }
+
+    public <T> Mono<T> recordApiServerRequest(Mono<T> operation) {
+        return recordReactive(operation, apiServerRequestTimer);
     }
 
     public <T> T recordRedisRead(Supplier<T> operation) {
@@ -119,5 +134,12 @@ public class RepitMetrics {
                 .description(description)
                 .publishPercentileHistogram()
                 .register(registry);
+    }
+
+    private <T> Mono<T> recordReactive(Mono<T> operation, Timer timer) {
+        return Mono.defer(() -> {
+            Timer.Sample sample = Timer.start();
+            return operation.doFinally(ignored -> sample.stop(timer));
+        });
     }
 }
