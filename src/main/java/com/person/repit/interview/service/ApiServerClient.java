@@ -1,6 +1,7 @@
 package com.person.repit.interview.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.person.repit.common.metrics.RepitMetrics;
 import com.person.repit.interview.dto.request.ChatInterviewAllRequest;
 import com.person.repit.interview.dto.response.MockInterviewResponse;
 import lombok.extern.slf4j.Slf4j;
@@ -18,13 +19,16 @@ public class ApiServerClient {
     private final RestClient restClient;
     private final String baseUrl;
     private final ObjectMapper objectMapper;
+    private final RepitMetrics metrics;
 
     public ApiServerClient(
             @Value("${repit.api-server.base-url}") String baseUrl,
-            ObjectMapper objectMapper
+            ObjectMapper objectMapper,
+            RepitMetrics metrics
     ) {
         this.baseUrl = baseUrl;
         this.objectMapper = objectMapper;
+        this.metrics = metrics;
 
         log.info("API SERVER URL = {}", baseUrl);
 
@@ -46,12 +50,13 @@ public class ApiServerClient {
                 jobId
         );
 
-        String rawResponse =
+        String rawResponse = metrics.recordApiServerRequest(() ->
                 restClient.get()
                         .uri("/api/v1/ai?jobId={jobId}", jobId)
                         .header("Authorization", authorization)
                         .retrieve()
-                        .body(String.class);
+                        .body(String.class)
+        );
 
         try {
             return objectMapper.readValue(
@@ -68,11 +73,13 @@ public class ApiServerClient {
             ChatInterviewAllRequest request
     ) {
 
-        restClient.post()
-                .uri("/api/interviews/result")
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(request)
-                .retrieve()
-                .toBodilessEntity();
+        metrics.recordApiServerRequest(() ->
+                restClient.post()
+                        .uri("/api/interviews/result")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body(request)
+                        .retrieve()
+                        .toBodilessEntity()
+        );
     }
 }

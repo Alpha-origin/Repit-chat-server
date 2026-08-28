@@ -1,6 +1,7 @@
 package com.person.repit.interview.websocket;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.person.repit.common.metrics.RepitMetrics;
 import com.person.repit.common.type.MessageType;
 import com.person.repit.interview.dto.request.ChatAnswerRequest;
 import com.person.repit.interview.dto.request.ChatWebSocketAnswerMessageRequest;
@@ -30,6 +31,7 @@ public class ChatInterviewWebSocketHandler extends TextWebSocketHandler {
 
     private final ObjectMapper objectMapper;
     private final ChatInterviewService chatInterviewService;
+    private final RepitMetrics metrics;
 
     private final Map<String, String> sessionIdMap = new ConcurrentHashMap<>();
 
@@ -38,7 +40,7 @@ public class ChatInterviewWebSocketHandler extends TextWebSocketHandler {
         String sessionId = extractSessionId(session);
 
         if (sessionId == null || sessionId.isBlank()) {
-            send(session, ChatWebSocketMessageResponse.error("sessionId가 필요합니다."));
+            sendError(session, "sessionId가 필요합니다.");
             session.close(CloseStatus.BAD_DATA);
             return;
         }
@@ -46,19 +48,21 @@ public class ChatInterviewWebSocketHandler extends TextWebSocketHandler {
         try {
             ChatQuestionResponse question = chatInterviewService.getCurrentQuestion(sessionId);
             sessionIdMap.put(session.getId(), sessionId);
+            metrics.webSocketConnected();
             send(session, ChatWebSocketMessageResponse.question(question));
         } catch (RuntimeException exception) {
-            send(session, ChatWebSocketMessageResponse.error(exception.getMessage()));
+            sendError(session, exception.getMessage());
             session.close(CloseStatus.BAD_DATA);
         }
     }
 
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
+        metrics.webSocketMessageReceived();
         String sessionId = sessionIdMap.get(session.getId());
 
         if (sessionId == null) {
-            send(session, ChatWebSocketMessageResponse.error("현재 연결에 등록된 면접 세션이 없습니다."));
+            sendError(session, "현재 연결에 등록된 면접 세션이 없습니다.");
             session.close(CloseStatus.BAD_DATA);
             return;
         }
@@ -71,12 +75,12 @@ public class ChatInterviewWebSocketHandler extends TextWebSocketHandler {
                     ChatWebSocketMessageRequest.class
             );
         } catch (Exception exception) {
-            send(session, ChatWebSocketMessageResponse.error("메시지 형식이 올바르지 않습니다."));
+            sendError(session, "메시지 형식이 올바르지 않습니다.");
             return;
         }
 
         if (request.getType() == null) {
-            send(session, ChatWebSocketMessageResponse.error("메시지 타입이 필요합니다."));
+            sendError(session, "메시지 타입이 필요합니다.");
             return;
         }
 
@@ -89,35 +93,38 @@ public class ChatInterviewWebSocketHandler extends TextWebSocketHandler {
                         ChatWebSocketAnswerMessageRequest.class
                 );
             } catch (Exception exception) {
-                send(session, ChatWebSocketMessageResponse.error("답변 메세지 형식이 올바르지 않습니다."));
+                sendError(session, "답변 메세지 형식이 올바르지 않습니다.");
                 return;
             }
 
             if (answerMessageRequest.getQuestionId() == null) {
-                send(session, ChatWebSocketMessageResponse.error("질문 ID가 존재하지 않습니다."));
+                sendError(session, "질문 ID가 존재하지 않습니다.");
                 return;
             }
 
             if (answerMessageRequest.getResponseTime() == null) {
-                send(session, ChatWebSocketMessageResponse.error("답변 응답 시간이 존재하지 않습니다."));
+                sendError(session, "답변 응답 시간이 존재하지 않습니다.");
                 return;
             }
 
             if (answerMessageRequest.getContent() == null) {
-                send(session, ChatWebSocketMessageResponse.error("답변 내용이 존재하지 않습니다."));
+                sendError(session, "답변 내용이 존재하지 않습니다.");
                 return;
             }
 
             if (answerMessageRequest.getContent().isBlank()) {
-                send(session, ChatWebSocketMessageResponse.error("답변 내용이 존재하지 않습니다."));
+                sendError(session, "답변 내용이 존재하지 않습니다.");
                 return;
             }
 
             ChatAnswerRequest answerRequest = answerMessageRequest.toChatAnswerRequest();
 
-            ChatProgressResponse progress = chatInterviewService.submitAnswer(sessionId, answerRequest);
+            ChatProgressResponse progress = metrics.recordAnswerProcessing(
+                    () -> chatInterviewService.submitAnswer(sessionId, answerRequest)
+            );
 
             send(session, ChatWebSocketMessageResponse.progress(progress));
+            metrics.webSocketMessageProcessed();
 
             if (progress.getQuestion() == null) {
                 session.close(CloseStatus.NORMAL);
@@ -129,6 +136,7 @@ public class ChatInterviewWebSocketHandler extends TextWebSocketHandler {
         if (request.getType() == MessageType.COMPLETE) {
             ChatProgressResponse progress = chatInterviewService.completeInterview(sessionId);
             send(session, ChatWebSocketMessageResponse.progress(progress));
+            metrics.webSocketMessageProcessed();
             session.close(CloseStatus.NORMAL);
             return;
         }
@@ -136,21 +144,24 @@ public class ChatInterviewWebSocketHandler extends TextWebSocketHandler {
         if (request.getType() == MessageType.QUIT) {
             ChatProgressResponse progress = chatInterviewService.quitInterview(sessionId);
             send(session, ChatWebSocketMessageResponse.end(progress.getMessage()));
+            metrics.webSocketMessageProcessed();
             session.close(CloseStatus.NORMAL);
             return;
         }
 
-        send(session, ChatWebSocketMessageResponse.error("지원하지 않는 메시지 타입입니다."));
+        sendError(session, "지원하지 않는 메시지 타입입니다.");
     }
 
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
-        sessionIdMap.remove(session.getId());
+        if (sessionIdMap.remove(session.getId()) != null) {
+            metrics.webSocketDisconnected();
+        }
     }
 
     @Override
     public void handleTransportError(WebSocketSession session, Throwable exception) throws Exception {
-        send(session, ChatWebSocketMessageResponse.error("웹소켓 통신 중 오류가 발생했습니다."));
+        sendError(session, "웹소켓 통신 중 오류가 발생했습니다.");
         session.close(CloseStatus.SERVER_ERROR);
     }
 
@@ -171,5 +182,10 @@ public class ChatInterviewWebSocketHandler extends TextWebSocketHandler {
         if (session.isOpen()) {
             session.sendMessage(new TextMessage(objectMapper.writeValueAsString(payload)));
         }
+    }
+
+    private void sendError(WebSocketSession session, String message) throws IOException {
+        metrics.webSocketMessageFailed();
+        send(session, ChatWebSocketMessageResponse.error(message));
     }
 }

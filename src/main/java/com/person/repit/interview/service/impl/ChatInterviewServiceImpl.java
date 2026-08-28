@@ -1,6 +1,7 @@
 package com.person.repit.interview.service.impl;
 
 import com.person.repit.interview.dto.request.*;
+import com.person.repit.common.metrics.RepitMetrics;
 import com.person.repit.interview.dto.response.*;
 import com.person.repit.interview.exception.*;
 import com.person.repit.interview.domain.ChatAnswer;
@@ -38,6 +39,7 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
     private final AiQuestionClient aiQuestionClient;
     private final RedisTemplate<String, Object> redisTemplate;
     private final ApiServerClient apiServerClient;
+    private final RepitMetrics metrics;
 
 
     @Override
@@ -81,8 +83,9 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
                 .createdAt(LocalDateTime.now())
                 .build();
 
-        Boolean created = redisTemplate.opsForValue()
-                .setIfAbsent(key, session, SESSION_TTL);
+        Boolean created = metrics.recordRedisWrite(() ->
+                redisTemplate.opsForValue().setIfAbsent(key, session, SESSION_TTL)
+        );
 
         if (!Boolean.TRUE.equals(created)) {
             return ChatInterviewResponse.from(getSession(request.getSessionId()));
@@ -241,7 +244,9 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
     }
 
     private ChatInterviewSession getSession(String sessionId) {
-        Object value = redisTemplate.opsForValue().get(createKey(sessionId));
+        Object value = metrics.recordRedisRead(
+                () -> redisTemplate.opsForValue().get(createKey(sessionId))
+        );
 
         if (value == null) {
             throw new InterviewSessionNotFoundException("면접 세션을 찾을 수 없습니다.");
@@ -253,15 +258,17 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
     }
 
     private void saveSession(ChatInterviewSession session) {
-        redisTemplate.opsForValue().set(
-                createKey(session.getSessionId()),
-                session,
-                SESSION_TTL
+        metrics.recordRedisWrite(() ->
+                redisTemplate.opsForValue().set(
+                        createKey(session.getSessionId()),
+                        session,
+                        SESSION_TTL
+                )
         );
     }
 
     private void deleteSession(String sessionId) {
-        redisTemplate.delete(createKey(sessionId));
+        metrics.recordRedisWrite(() -> redisTemplate.delete(createKey(sessionId)));
     }
 
     private boolean canCreateFollowQuestion(ChatInterviewSession session, ChatQuestion currentQuestion) {

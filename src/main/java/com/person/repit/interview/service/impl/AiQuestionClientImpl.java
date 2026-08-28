@@ -2,6 +2,7 @@ package com.person.repit.interview.service.impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.person.repit.common.metrics.RepitMetrics;
 import com.person.repit.interview.dto.request.FollowQuestionAiRequest;
 import com.person.repit.interview.dto.response.FollowQuestionAiResponse;
 import com.person.repit.interview.service.AiQuestionClient;
@@ -23,14 +24,17 @@ public class AiQuestionClientImpl implements AiQuestionClient {
     private final RestClient restClient;
     private final ObjectMapper objectMapper;
     private final String model;
+    private final RepitMetrics metrics;
 
     public AiQuestionClientImpl(
             ObjectMapper objectMapper,
             @Value("${anthropic.api-key}") String apiKey,
-            @Value("${anthropic.model}") String model
+            @Value("${anthropic.model}") String model,
+            RepitMetrics metrics
     ) {
         this.objectMapper = objectMapper;
         this.model = model;
+        this.metrics = metrics;
         this.restClient = RestClient.builder()
                 .baseUrl("https://api.anthropic.com")
                 .defaultHeader("x-api-key", apiKey)
@@ -40,6 +44,16 @@ public class AiQuestionClientImpl implements AiQuestionClient {
 
     @Override
     public FollowQuestionAiResponse decideFollowQuestion(FollowQuestionAiRequest request) {
+        try {
+            return metrics.recordAnthropicRequest(() -> executeRequest(request));
+        } catch (Exception e) {
+            log.error("[AI FAIL]", e);
+
+            return FollowQuestionAiResponse.notRequired();
+        }
+    }
+
+    private FollowQuestionAiResponse executeRequest(FollowQuestionAiRequest request) {
         try {
             String body = restClient.post()
                     .uri("/v1/messages")
@@ -67,10 +81,10 @@ public class AiQuestionClientImpl implements AiQuestionClient {
 
             return result;
 
-        } catch (Exception e) {
-            log.error("[AI FAIL]", e);
-
-            return FollowQuestionAiResponse.notRequired();
+        } catch (RuntimeException exception) {
+            throw exception;
+        } catch (Exception exception) {
+            throw new IllegalStateException("Anthropic 응답 처리에 실패했습니다.", exception);
         }
     }
 
