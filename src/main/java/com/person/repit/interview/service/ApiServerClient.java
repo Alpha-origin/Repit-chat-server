@@ -1,6 +1,5 @@
 package com.person.repit.interview.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.person.repit.common.metrics.RepitMetrics;
 import com.person.repit.interview.dto.request.ChatInterviewAllRequest;
 import com.person.repit.interview.dto.response.MockInterviewResponse;
@@ -8,7 +7,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.RestClient;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 
 import java.util.UUID;
 
@@ -16,28 +16,33 @@ import java.util.UUID;
 @Component
 public class ApiServerClient {
 
-    private final RestClient restClient;
+    private final WebClient webClient;
     private final String baseUrl;
-    private final ObjectMapper objectMapper;
     private final RepitMetrics metrics;
 
     public ApiServerClient(
             @Value("${repit.api-server.base-url}") String baseUrl,
-            ObjectMapper objectMapper,
+            WebClient.Builder webClientBuilder,
             RepitMetrics metrics
     ) {
         this.baseUrl = baseUrl;
-        this.objectMapper = objectMapper;
         this.metrics = metrics;
 
         log.info("API SERVER URL = {}", baseUrl);
 
-        this.restClient = RestClient.builder()
+        this.webClient = webClientBuilder
                 .baseUrl(baseUrl)
                 .build();
     }
 
     public MockInterviewResponse getMockInterview(
+            UUID jobId,
+            String authorization
+    ) {
+        return getMockInterviewReactive(jobId, authorization).block();
+    }
+
+    public Mono<MockInterviewResponse> getMockInterviewReactive(
             UUID jobId,
             String authorization
     ) {
@@ -50,36 +55,30 @@ public class ApiServerClient {
                 jobId
         );
 
-        String rawResponse = metrics.recordApiServerRequest(() ->
-                restClient.get()
+        return metrics.recordApiServerRequest(
+                webClient.get()
                         .uri("/api/v1/ai?jobId={jobId}", jobId)
                         .header("Authorization", authorization)
                         .retrieve()
-                        .body(String.class)
+                        .bodyToMono(MockInterviewResponse.class)
         );
-
-        try {
-            return objectMapper.readValue(
-                    rawResponse,
-                    MockInterviewResponse.class
-            );
-        } catch (Exception e) {
-            log.error("JSON PARSE ERROR", e);
-            throw new RuntimeException(e);
-        }
     }
 
     public void saveInterviewResult(
             ChatInterviewAllRequest request
     ) {
+        saveInterviewResultReactive(request).block();
+    }
 
-        metrics.recordApiServerRequest(() ->
-                restClient.post()
+    public Mono<Void> saveInterviewResultReactive(ChatInterviewAllRequest request) {
+        return metrics.recordApiServerRequest(
+                webClient.post()
                         .uri("/api/interviews/result")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .body(request)
+                        .bodyValue(request)
                         .retrieve()
                         .toBodilessEntity()
+                        .then()
         );
     }
 }
