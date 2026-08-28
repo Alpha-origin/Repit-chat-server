@@ -10,7 +10,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.RestClient;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 
 import java.util.List;
 import java.util.Map;
@@ -21,7 +22,7 @@ public class AiQuestionClientImpl implements AiQuestionClient {
 
     private static final String ANTHROPIC_VERSION = "2023-06-01";
 
-    private final RestClient restClient;
+    private final WebClient webClient;
     private final ObjectMapper objectMapper;
     private final String model;
     private final RepitMetrics metrics;
@@ -31,12 +32,13 @@ public class AiQuestionClientImpl implements AiQuestionClient {
             @Value("${anthropic.api-key}") String apiKey,
             @Value("${anthropic.model}") String model,
             @Value("${anthropic.base-url:https://api.anthropic.com}") String baseUrl,
+            WebClient.Builder webClientBuilder,
             RepitMetrics metrics
     ) {
         this.objectMapper = objectMapper;
         this.model = model;
         this.metrics = metrics;
-        this.restClient = RestClient.builder()
+        this.webClient = webClientBuilder
                 .baseUrl(baseUrl)
                 .defaultHeader("x-api-key", apiKey)
                 .defaultHeader("anthropic-version", ANTHROPIC_VERSION)
@@ -45,24 +47,30 @@ public class AiQuestionClientImpl implements AiQuestionClient {
 
     @Override
     public FollowQuestionAiResponse decideFollowQuestion(FollowQuestionAiRequest request) {
-        try {
-            return metrics.recordAnthropicRequest(() -> executeRequest(request));
-        } catch (Exception e) {
-            log.error("[AI FAIL]", e);
-
-            return FollowQuestionAiResponse.notRequired();
-        }
+        return decideFollowQuestionReactive(request)
+                .blockOptional()
+                .orElseGet(FollowQuestionAiResponse::notRequired);
     }
 
-    private FollowQuestionAiResponse executeRequest(FollowQuestionAiRequest request) {
-        try {
-            String body = restClient.post()
-                    .uri("/v1/messages")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .body(createRequestBody(request))
-                    .retrieve()
-                    .body(String.class);
+    @Override
+    public Mono<FollowQuestionAiResponse> decideFollowQuestionReactive(FollowQuestionAiRequest request) {
+        return metrics.recordAnthropicRequest(executeRequest(request))
+                .doOnError(exception -> log.error("[AI FAIL]", exception))
+                .onErrorReturn(FollowQuestionAiResponse.notRequired());
+    }
 
+    private Mono<FollowQuestionAiResponse> executeRequest(FollowQuestionAiRequest request) {
+        return webClient.post()
+                .uri("/v1/messages")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(createRequestBody(request))
+                .retrieve()
+                .bodyToMono(String.class)
+                .map(this::parseResponse);
+    }
+
+    private FollowQuestionAiResponse parseResponse(String body) {
+        try {
             JsonNode response = objectMapper.readTree(body);
 
             String text = extractText(response);
