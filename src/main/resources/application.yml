@@ -24,3 +24,10 @@ anthropic:
   base-url: ${ANTHROPIC_BASE_URL:https://api.anthropic.com}
   api-key: ${ANTHROPIC_API_KEY}
   model: ${ANTHROPIC_MODEL:claude-sonnet-4-6}
+  max-concurrent-requests: 50
+  connect-timeout: 2s
+  response-timeout: 5s
+  pool:
+    max-connections: 50
+    pending-acquire-max-count: 50
+    pending-acquire-timeout: 2s

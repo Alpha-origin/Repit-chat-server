@@ -22,8 +22,6 @@ import java.util.Map;
 @Component
 public class AiQuestionClientImpl implements AiQuestionClient {
 
-    private static final String ANTHROPIC_VERSION = "2023-06-01";
-
     private final WebClient webClient;
     private final ObjectMapper objectMapper;
     private final String model;
