@@ -83,4 +83,24 @@ class RepitMetricsTest {
         assertThat(registry.get("repit.anthropic.requests.failure").counter().count()).isEqualTo(1);
         assertThat(registry.get("repit.anthropic.request.duration").timer().count()).isEqualTo(2);
     }
+
+    @Test
+    void recordsReactiveAnswerAndRedisDurations() {
+        String answer = metrics.recordAnswerProcessing(Mono.just("answer")).block();
+        metrics.recordRedisRead(Mono.just("session")).block();
+        metrics.recordRedisWrite(Mono.just(true)).block();
+
+        assertThat(answer).isEqualTo("answer");
+        assertThat(registry.get("repit.answer.success").counter().count()).isEqualTo(1);
+        assertThat(registry.get("repit.answer.processing.duration").timer().count()).isEqualTo(1);
+        assertThat(registry.get("repit.redis.read.duration").timer().count()).isEqualTo(1);
+        assertThat(registry.get("repit.redis.write.duration").timer().count()).isEqualTo(1);
+
+        assertThatThrownBy(() -> metrics.recordAnswerProcessing(
+                Mono.<String>error(new IllegalStateException("failure"))
+        ).block()).isInstanceOf(IllegalStateException.class);
+
+        assertThat(registry.get("repit.answer.failure").counter().count()).isEqualTo(1);
+        assertThat(registry.get("repit.answer.processing.duration").timer().count()).isEqualTo(2);
+    }
 }
