@@ -78,6 +78,16 @@ public class RepitMetrics {
         }
     }
 
+    public <T> Mono<T> recordAnswerProcessing(Mono<T> operation) {
+        return Mono.defer(() -> {
+            Timer.Sample sample = Timer.start();
+            return operation
+                    .doOnSuccess(ignored -> successfulAnswers.increment())
+                    .doOnError(ignored -> failedAnswers.increment())
+                    .doFinally(ignored -> sample.stop(answerProcessingTimer));
+        });
+    }
+
     public <T> T recordAnthropicRequest(Supplier<T> operation) {
         try {
             T result = anthropicRequestTimer.record(operation);
@@ -115,12 +125,20 @@ public class RepitMetrics {
         return redisReadTimer.record(operation);
     }
 
+    public <T> Mono<T> recordRedisRead(Mono<T> operation) {
+        return recordReactive(operation, redisReadTimer);
+    }
+
     public void recordRedisWrite(Runnable operation) {
         redisWriteTimer.record(operation);
     }
 
     public <T> T recordRedisWrite(Supplier<T> operation) {
         return redisWriteTimer.record(operation);
+    }
+
+    public <T> Mono<T> recordRedisWrite(Mono<T> operation) {
+        return recordReactive(operation, redisWriteTimer);
     }
 
     private Counter counter(MeterRegistry registry, String name, String description) {
