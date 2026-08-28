@@ -19,12 +19,10 @@ import org.springframework.web.reactive.socket.WebSocketSession;
 import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
 
 import java.net.URI;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Supplier;
 
 @Component
 @RequiredArgsConstructor
@@ -70,9 +68,7 @@ public class ReactiveChatInterviewWebSocketHandler implements WebSocketHandler {
             String sessionId,
             AtomicBoolean connected
     ) {
-        Mono<OutboundMessage> initialQuestion = blocking(
-                () -> chatInterviewService.getCurrentQuestion(sessionId)
-        )
+        Mono<OutboundMessage> initialQuestion = chatInterviewService.getCurrentQuestion(sessionId)
                 .doOnSuccess(question -> {
                     connected.set(true);
                     metrics.webSocketConnected();
@@ -129,21 +125,21 @@ public class ReactiveChatInterviewWebSocketHandler implements WebSocketHandler {
 
         ChatAnswerRequest answerRequest = message.toChatAnswerRequest();
 
-        return blocking(() -> metrics.recordAnswerProcessing(
-                () -> chatInterviewService.submitAnswer(sessionId, answerRequest)
-        ))
+        return metrics.recordAnswerProcessing(
+                        chatInterviewService.submitAnswer(sessionId, answerRequest)
+                )
                 .map(progress -> progressMessage(progress, progress.getQuestion() == null))
                 .doOnSuccess(ignored -> metrics.webSocketMessageProcessed());
     }
 
     private Mono<OutboundMessage> processCompletion(String sessionId) {
-        return blocking(() -> chatInterviewService.completeInterview(sessionId))
+        return chatInterviewService.completeInterview(sessionId)
                 .map(progress -> progressMessage(progress, true))
                 .doOnSuccess(ignored -> metrics.webSocketMessageProcessed());
     }
 
     private Mono<OutboundMessage> processQuit(String sessionId) {
-        return blocking(() -> chatInterviewService.quitInterview(sessionId))
+        return chatInterviewService.quitInterview(sessionId)
                 .map(progress -> closeNormally(ChatWebSocketMessageResponse.end(progress.getMessage())))
                 .doOnSuccess(ignored -> metrics.webSocketMessageProcessed());
     }
@@ -151,11 +147,6 @@ public class ReactiveChatInterviewWebSocketHandler implements WebSocketHandler {
     private OutboundMessage progressMessage(ChatProgressResponse progress, boolean close) {
         ChatWebSocketMessageResponse response = ChatWebSocketMessageResponse.progress(progress);
         return close ? closeNormally(response) : keepOpen(response);
-    }
-
-    private <T> Mono<T> blocking(Supplier<T> operation) {
-        return Mono.fromCallable(operation::get)
-                .subscribeOn(Schedulers.boundedElastic());
     }
 
     private String extractSessionId(WebSocketSession session) {
