@@ -52,7 +52,7 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
     @Override
     public Mono<ChatInterviewResponse> prepareInterview(ChatInterviewPrepareRequest request) {
         return Mono.defer(() -> {
-            log.info("sessionId={}, interviewId={}", request.getSessionId(), request.getInterviewId());
+            log.debug("sessionId={}, interviewId={}", request.getSessionId(), request.getInterviewId());
             String key = createKey(request.getSessionId());
 
             var questions = request.getQuestions().stream()
@@ -128,7 +128,7 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
                     .build();
 
             session.getAnswers().add(answer);
-            log.info("[ANSWER SAVED] qId={}", currentQuestion.getQuestionId());
+            log.debug("[ANSWER SAVED] qId={}", currentQuestion.getQuestionId());
 
             return createFollowQuestionIfRequired(session, currentQuestion, request)
                     .flatMap(aiResponse -> moveToNextQuestion(session, currentQuestion, aiResponse));
@@ -180,7 +180,7 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
             ChatQuestion currentQuestion,
             FollowQuestionAiResponse aiResponse
     ) {
-        log.info("[AI RESULT] required={}", aiResponse.getRequired());
+        log.debug("[AI RESULT] required={}", aiResponse.getRequired());
 
         if (Boolean.TRUE.equals(aiResponse.getRequired())) {
             ChatQuestion followQuestion = ChatQuestion.builder()

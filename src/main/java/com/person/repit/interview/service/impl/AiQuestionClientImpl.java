@@ -17,6 +17,7 @@ import reactor.core.publisher.Mono;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.RejectedExecutionException;
 
 @Slf4j
 @Component
@@ -45,9 +46,12 @@ public class AiQuestionClientImpl implements AiQuestionClient {
     @Override
     public Mono<FollowQuestionAiResponse> decideFollowQuestion(FollowQuestionAiRequest request) {
         return metrics.recordAnthropicRequest(
-                        concurrencyLimiter.execute(executeRequest(request))
+                concurrencyLimiter.execute(executeRequest(request))
                 )
-                .doOnError(exception -> log.error("[AI FAIL]", exception))
+                .doOnError(
+                        exception -> !(exception instanceof RejectedExecutionException),
+                        exception -> log.error("[AI FAIL]", exception)
+                )
                 .onErrorReturn(FollowQuestionAiResponse.notRequired());
     }
 
