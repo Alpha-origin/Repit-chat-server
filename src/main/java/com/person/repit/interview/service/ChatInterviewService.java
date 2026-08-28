@@ -6,17 +6,18 @@ import com.person.repit.interview.dto.response.ChatInterviewAllResponse;
 import com.person.repit.interview.dto.response.ChatInterviewResponse;
 import com.person.repit.interview.dto.response.ChatProgressResponse;
 import com.person.repit.interview.dto.response.ChatQuestionResponse;
+import reactor.core.publisher.Mono;
 
 public interface ChatInterviewService {
-    ChatInterviewResponse prepareInterview(ChatInterviewPrepareRequest request);
+    Mono<ChatInterviewResponse> prepareInterview(ChatInterviewPrepareRequest request);
 
-    ChatInterviewAllResponse getInterview(String sessionId);
+    Mono<ChatInterviewAllResponse> getInterview(String sessionId);
 
-    ChatQuestionResponse getCurrentQuestion(String sessionId);
+    Mono<ChatQuestionResponse> getCurrentQuestion(String sessionId);
 
-    ChatProgressResponse submitAnswer(String sessionId, ChatAnswerRequest request);
+    Mono<ChatProgressResponse> submitAnswer(String sessionId, ChatAnswerRequest request);
 
-    ChatProgressResponse completeInterview(String sessionId);
+    Mono<ChatProgressResponse> completeInterview(String sessionId);
 
-    ChatProgressResponse quitInterview(String sessionId);
+    Mono<ChatProgressResponse> quitInterview(String sessionId);
 }
