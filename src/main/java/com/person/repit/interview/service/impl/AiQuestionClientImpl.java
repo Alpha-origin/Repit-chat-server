@@ -5,8 +5,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.person.repit.common.metrics.RepitMetrics;
 import com.person.repit.interview.dto.request.FollowQuestionAiRequest;
 import com.person.repit.interview.dto.response.FollowQuestionAiResponse;
+import com.person.repit.interview.service.AiRequestConcurrencyLimiter;
 import com.person.repit.interview.service.AiQuestionClient;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -26,28 +28,27 @@ public class AiQuestionClientImpl implements AiQuestionClient {
     private final ObjectMapper objectMapper;
     private final String model;
     private final RepitMetrics metrics;
+    private final AiRequestConcurrencyLimiter concurrencyLimiter;
 
     public AiQuestionClientImpl(
             ObjectMapper objectMapper,
-            @Value("${anthropic.api-key}") String apiKey,
             @Value("${anthropic.model}") String model,
-            @Value("${anthropic.base-url:https://api.anthropic.com}") String baseUrl,
-            WebClient.Builder webClientBuilder,
-            RepitMetrics metrics
+            @Qualifier("anthropicWebClient") WebClient webClient,
+            RepitMetrics metrics,
+            AiRequestConcurrencyLimiter concurrencyLimiter
     ) {
         this.objectMapper = objectMapper;
         this.model = model;
         this.metrics = metrics;
-        this.webClient = webClientBuilder
-                .baseUrl(baseUrl)
-                .defaultHeader("x-api-key", apiKey)
-                .defaultHeader("anthropic-version", ANTHROPIC_VERSION)
-                .build();
+        this.webClient = webClient;
+        this.concurrencyLimiter = concurrencyLimiter;
     }
 
     @Override
     public Mono<FollowQuestionAiResponse> decideFollowQuestion(FollowQuestionAiRequest request) {
-        return metrics.recordAnthropicRequest(executeRequest(request))
+        return metrics.recordAnthropicRequest(
+                        concurrencyLimiter.execute(executeRequest(request))
+                )
                 .doOnError(exception -> log.error("[AI FAIL]", exception))
                 .onErrorReturn(FollowQuestionAiResponse.notRequired());
     }
