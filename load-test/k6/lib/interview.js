@@ -6,11 +6,17 @@ import { Counter, Rate, Trend } from 'k6/metrics';
 const BASE_URL = __ENV.BASE_URL || 'http://localhost:8080';
 const WS_URL = __ENV.WS_URL || BASE_URL.replace(/^http/, 'ws');
 const SOCKET_TIMEOUT_MS = Number(__ENV.WS_TIMEOUT_MS || 20000);
+const ANSWER_DELAY_MS = Number(__ENV.ANSWER_DELAY_MS || 0);
 
 const websocketMessages = new Counter('repit_ws_messages');
 const websocketFailures = new Rate('repit_ws_failures');
 const answerDuration = new Trend('repit_ws_answer_duration', true);
 const completedInterviews = new Counter('repit_interviews_completed');
+const prepareFailures = new Counter('repit_prepare_failures');
+const handshakeFailures = new Counter('repit_ws_handshake_failures');
+const socketTimeouts = new Counter('repit_ws_socket_timeouts');
+const socketErrors = new Counter('repit_ws_errors');
+const serverErrors = new Counter('repit_ws_server_errors');
 
 export const thresholds = {
     checks: ['rate>0.99'],
@@ -24,6 +30,7 @@ export function runInterview() {
     const prepared = prepareInterview(sessionId);
 
     if (!prepared) {
+        prepareFailures.add(1);
         websocketFailures.add(true);
         return;
     }
@@ -71,6 +78,7 @@ export function runInterview() {
                 }
 
                 if (message.type === 'ERROR') {
+                    serverErrors.add(1);
                     check(false, { 'server returned no WebSocket error': () => false });
                     recordFailure();
                     socket.close();
@@ -89,14 +97,22 @@ export function runInterview() {
                         return;
                     }
 
-                    sentAnswers += 1;
-                    answerStartedAt = Date.now();
-                    socket.send(JSON.stringify({
-                        type: 'ANSWER',
-                        questionId: message.question.questionId,
-                        responseTime: 10,
-                        content: `k6 부하 테스트 답변 ${sentAnswers}`,
-                    }));
+                    const sendAnswer = () => {
+                        sentAnswers += 1;
+                        answerStartedAt = Date.now();
+                        socket.send(JSON.stringify({
+                            type: 'ANSWER',
+                            questionId: message.question.questionId,
+                            responseTime: Math.max(1, Math.round(ANSWER_DELAY_MS / 1000)),
+                            content: `k6 부하 테스트 답변 ${sentAnswers}`,
+                        }));
+                    };
+
+                    if (ANSWER_DELAY_MS > 0) {
+                        socket.setTimeout(sendAnswer, ANSWER_DELAY_MS);
+                    } else {
+                        sendAnswer();
+                    }
                     return;
                 }
 
@@ -117,6 +133,7 @@ export function runInterview() {
             });
 
             socket.on('error', () => {
+                socketErrors.add(1);
                 recordFailure();
             });
 
@@ -128,6 +145,7 @@ export function runInterview() {
 
             socket.setTimeout(() => {
                 if (!completed) {
+                    socketTimeouts.add(1);
                     check(false, { 'interview completed before socket timeout': () => false });
                     recordFailure();
                     socket.close();
@@ -141,6 +159,7 @@ export function runInterview() {
     });
 
     if (!connected) {
+        handshakeFailures.add(1);
         recordFailure();
     }
 }
