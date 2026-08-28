@@ -35,7 +35,7 @@ public class ApiServerClient {
                 .build();
     }
 
-    public Mono<MockInterviewResponse> getMockInterviewReactive(
+    public Mono<MockInterviewResponse> getMockInterview(
             UUID jobId,
             String authorization
     ) {
@@ -57,7 +57,7 @@ public class ApiServerClient {
         );
     }
 
-    public Mono<Void> saveInterviewResultReactive(ChatInterviewAllRequest request) {
+    public Mono<Void> saveInterviewResult(ChatInterviewAllRequest request) {
         return metrics.recordApiServerRequest(
                 webClient.post()
                         .uri("/api/interviews/result")

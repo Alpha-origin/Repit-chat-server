@@ -168,7 +168,7 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
                 request.getResponseTime()
         );
 
-        return aiQuestionClient.decideFollowQuestionReactive(aiRequest)
+        return aiQuestionClient.decideFollowQuestion(aiRequest)
                 .onErrorResume(exception -> {
                     log.error("[AI ERROR]", exception);
                     return Mono.just(FollowQuestionAiResponse.notRequired());
@@ -212,7 +212,7 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
             ChatProgressResponse response
     ) {
         session.setStatus(status);
-        return apiServerClient.saveInterviewResultReactive(ChatInterviewAllRequest.from(session))
+        return apiServerClient.saveInterviewResult(ChatInterviewAllRequest.from(session))
                 .then(deleteSession(session.getSessionId()))
                 .thenReturn(response);
     }
