@@ -13,6 +13,7 @@ public class FollowQuestionAiResponse {
     private Boolean required;
     private String intention;
     private String content;
+    private String expectedAnswer;
 
     public static FollowQuestionAiResponse notRequired() {
         FollowQuestionAiResponse response = new FollowQuestionAiResponse();

@@ -21,6 +21,7 @@ public class FollowQuestionAiRequest {
     private QuestionType questionType;
     private String questionIntention;
     private String questionContent;
+    private String expectedAnswer;
 
     private String answerContent;
     private Integer responseTime;
@@ -46,6 +47,7 @@ public class FollowQuestionAiRequest {
                 .questionType(question.getType())
                 .questionIntention(question.getIntention())
                 .questionContent(question.getContent())
+                .expectedAnswer(question.getExpectedAnswer())
                 .answerContent(answerContent)
                 .responseTime(responseTime)
                 .build();
