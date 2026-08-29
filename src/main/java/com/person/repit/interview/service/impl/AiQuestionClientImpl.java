@@ -166,7 +166,7 @@ public class AiQuestionClientImpl implements AiQuestionClient {
 
                 응답 형식:
                 {
-                  "score": 꼬리질문 점수 (0~5점)
+                  "score": 꼬리질문 점수 (0~5점),
                   "required": true 또는 false,
                   "intention": "꼬리질문 의도. required=false면 null",
                   "content": "꼬리질문 본문. required=false면 null"
