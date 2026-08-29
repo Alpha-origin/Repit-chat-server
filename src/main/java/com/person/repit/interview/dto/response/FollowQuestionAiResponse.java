@@ -9,6 +9,7 @@ import lombok.Setter;
 @NoArgsConstructor
 public class FollowQuestionAiResponse {
 
+    private Integer score;
     private Boolean required;
     private String intention;
     private String content;
