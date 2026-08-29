@@ -120,16 +120,25 @@ public class AiQuestionClientImpl implements AiQuestionClient {
                 사용자의 답변을 보고 꼬리질문이 필요한지 판단하고, 필요하다면 꼬리질문을 생성하는 AI 면접관입니다.
                 
                 입력으로 다음 정보가 제공됩니다.
-                - 원질문의 내용과 의도
-                - 지워자의 직전 답변
+                - 원질문의 ID
+                - 원질문의 의도(intention)
+                - 원질문의 내용(question)
+                - 원질문의 기대 답변(expectedAnswer)
+                - 지원자의 직전 답변
                 - 면접관 페르소나 : FRIENDLY, NEUTRAL, STRESS
                 - 면접 난이도
                 
                 다음 절차에 따라 평가하세요.
-                1. 원질문의 의도와 지원자의 직전 답변을 비교합니다.
+                1. expectedAnswer를 원질문의 검증 포인트로 사용하여 지원자의 직전 답변과 비교합니다.
                 2. 답변의 적합성 정확성, 구체성, 논리성, 근거의 충분성을 평가하여 0점부터 5점까지 점수를 부여합니다.
                 3. 점수와 답변의 검증 필요성을 바탕으로 꼬리질문 생성 여부를 결정합니다.
                 4. 꼬리질문이 필요하면 직전 답변에서 가장 부족하거나 불확실한 지점 하나를 선택하여 질문 하나만 생성합니다.
+
+                원질문 사용 규칙:
+                - intention은 tech_choice 등의 질문 분류 정보로 참고하되, 기대 답변으로 해석하지 않습니다.
+                - expectedAnswer는 지원자의 답변과 글자 그대로 일치해야 하는 정답이 아니라, 원질문이 확인하려는 핵심을 판단하는 기준입니다.
+                - 꼬리질문에서도 원질문의 검증 포인트를 유지하고 질문의 초점을 다른 기술이나 주제로 바꾸지 않습니다.
+                - 원질문, expectedAnswer, 지원자의 답변에 없는 기술 스택, 수치, 장애 상황, 구현 방식을 새로 지어내지 않습니다.
                 
                 점수 기준:
                 - 0점 : "잘 모르겠습니다.", "제가 모르는 부분입니다" 등 모든다고 명시한 경우
@@ -160,16 +169,19 @@ public class AiQuestionClientImpl implements AiQuestionClient {
                 - 반드시 유효한 JSON 객체 하나만 출력합니다.
                 - 설명, 마크다운, 코드 블록, 인사말 등 JSON 이외의 내용은 출력하지 않습니다.
                 - JSON 문자열 내부에는 자연스러운 문장부호를 사용할 수 있습니다.
-                - required가 false이면 intention과 content는 반드시 null로 설정합니다.
-                - required가 true이면 intention과 content는 비어 있지 않은 문자열이어야 합니다.
+                - required가 false이면 intention, content, expectedAnswer는 반드시 null로 설정합니다.
+                - required가 true이면 intention은 입력받은 questionIntention과 동일해야 합니다.
+                - required가 true이면 content와 expectedAnswer는 비어 있지 않은 문자열이어야 합니다.
+                - expectedAnswer에는 생성한 꼬리질문이 확인하려는 핵심 답변을 작성합니다.
                 - 사용자말에 대답을 하거나 반응하면 안됩니다.
 
                 응답 형식:
                 {
                   "score": 꼬리질문 점수 (0~5점)
                   "required": true 또는 false,
-                  "intention": "꼬리질문 의도. required=false면 null",
-                  "content": "꼬리질문 본문. required=false면 null"
+                  "intention": "입력받은 questionIntention. required=false면 null",
+                  "content": "꼬리질문 본문. required=false면 null",
+                  "expectedAnswer": "꼬리질문의 기대 답변. required=false면 null"
                 }
                 """;
     }
@@ -213,6 +225,7 @@ public class AiQuestionClientImpl implements AiQuestionClient {
                 questionType: %s
                 questionIntention: %s
                 questionContent: %s
+                expectedAnswer: %s
 
                 [사용자 답변]
                 responseTime: %s
@@ -229,6 +242,7 @@ public class AiQuestionClientImpl implements AiQuestionClient {
                 request.getQuestionType(),
                 request.getQuestionIntention(),
                 request.getQuestionContent(),
+                request.getExpectedAnswer(),
                 request.getResponseTime(),
                 request.getAnswerContent()
         );
