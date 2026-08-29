@@ -1,16 +1,15 @@
 package com.person.repit.interview.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.person.repit.common.metrics.RepitMetrics;
 import com.person.repit.interview.dto.request.ChatInterviewAllRequest;
 import com.person.repit.interview.dto.response.MockInterviewResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.RestClient;
-import org.springframework.web.client.RestClientException;
-import org.springframework.web.client.RestClientResponseException;
+import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
+import reactor.core.publisher.Mono;
 
 import java.util.UUID;
 
@@ -18,29 +17,29 @@ import java.util.UUID;
 @Component
 public class ApiServerClient {
 
-    private final RestClient restClient;
+    private final WebClient webClient;
     private final String baseUrl;
-    private final ObjectMapper objectMapper;
+    private final RepitMetrics metrics;
 
     public ApiServerClient(
             @Value("${repit.api-server.base-url}") String baseUrl,
-            ObjectMapper objectMapper
+            WebClient.Builder webClientBuilder,
+            RepitMetrics metrics
     ) {
         this.baseUrl = baseUrl;
-        this.objectMapper = objectMapper;
+        this.metrics = metrics;
 
         log.info("API SERVER URL = {}", baseUrl);
 
-        this.restClient = RestClient.builder()
+        this.webClient = webClientBuilder
                 .baseUrl(baseUrl)
                 .build();
     }
 
-    public MockInterviewResponse getMockInterview(
+    public Mono<MockInterviewResponse> getMockInterview(
             UUID jobId,
             String authorization
     ) {
-
         log.info("AI REQUEST jobId={}", jobId);
 
         log.info(
@@ -49,25 +48,16 @@ public class ApiServerClient {
                 jobId
         );
 
-        String rawResponse =
-                restClient.get()
+        return metrics.recordApiServerRequest(
+                webClient.get()
                         .uri("/api/v1/ai?jobId={jobId}", jobId)
                         .header("Authorization", authorization)
                         .retrieve()
-                        .body(String.class);
-
-        try {
-            return objectMapper.readValue(
-                    rawResponse,
-                    MockInterviewResponse.class
-            );
-        } catch (Exception e) {
-            log.error("JSON PARSE ERROR", e);
-            throw new RuntimeException(e);
-        }
+                        .bodyToMono(MockInterviewResponse.class)
+        );
     }
 
-    public void saveInterviewResult(
+    public Mono<Void> saveInterviewResult(
             ChatInterviewAllRequest request
     ) {
         int qnaCount = request.getQnaRequests() == null
@@ -83,39 +73,41 @@ public class ApiServerClient {
                 qnaCount
         );
 
-        try {
-            ResponseEntity<Void> response = restClient.post()
-                    .uri("/api/interviews/result")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .body(request)
-                    .retrieve()
-                    .toBodilessEntity();
-
-            log.info(
-                    "[면접 결과 저장 성공] sessionId={}, interviewId={}, HTTP 상태={}",
-                    request.getSessionId(),
-                    request.getInterviewId(),
-                    response.getStatusCode().value()
-            );
-        } catch (RestClientResponseException exception) {
-            log.error(
-                    "[면접 결과 저장 실패] sessionId={}, interviewId={}, HTTP 상태={}, 응답={}",
-                    request.getSessionId(),
-                    request.getInterviewId(),
-                    exception.getStatusCode().value(),
-                    exception.getResponseBodyAsString(),
-                    exception
-            );
-            throw exception;
-        } catch (RestClientException exception) {
-            log.error(
-                    "[면접 결과 저장 실패] sessionId={}, interviewId={}, API 서버 통신 오류={}",
-                    request.getSessionId(),
-                    request.getInterviewId(),
-                    exception.getMessage(),
-                    exception
-            );
-            throw exception;
-        }
+        return metrics.recordApiServerRequest(
+                webClient.post()
+                        .uri("/api/interviews/result")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .bodyValue(request)
+                        .retrieve()
+                        .toBodilessEntity()
+                        .doOnNext(response -> log.info(
+                                "[면접 결과 저장 성공] sessionId={}, interviewId={}, HTTP 상태={}",
+                                request.getSessionId(),
+                                request.getInterviewId(),
+                                response.getStatusCode().value()
+                        ))
+                        .doOnError(
+                                WebClientResponseException.class,
+                                exception -> log.error(
+                                        "[면접 결과 저장 실패] sessionId={}, interviewId={}, HTTP 상태={}, 응답={}",
+                                        request.getSessionId(),
+                                        request.getInterviewId(),
+                                        exception.getStatusCode().value(),
+                                        exception.getResponseBodyAsString(),
+                                        exception
+                                )
+                        )
+                        .doOnError(
+                                exception -> !(exception instanceof WebClientResponseException),
+                                exception -> log.error(
+                                        "[면접 결과 저장 실패] sessionId={}, interviewId={}, API 서버 통신 오류={}",
+                                        request.getSessionId(),
+                                        request.getInterviewId(),
+                                        exception.getMessage(),
+                                        exception
+                                )
+                        )
+                        .then()
+        );
     }
 }

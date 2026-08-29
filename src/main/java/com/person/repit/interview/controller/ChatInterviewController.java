@@ -10,6 +10,7 @@ import com.person.repit.interview.service.ChatInterviewService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Mono;
 
 @RestController
 @RequestMapping("/chat/interviews")
@@ -18,22 +19,22 @@ public class ChatInterviewController {
     private final ChatInterviewService chatInterviewService;
 
     @PostMapping
-    public ChatInterviewResponse prepareInterview(@Valid @RequestBody ChatInterviewPrepareRequest request) {
+    public Mono<ChatInterviewResponse> prepareInterview(@Valid @RequestBody ChatInterviewPrepareRequest request) {
         return chatInterviewService.prepareInterview(request);
     }
 
     @GetMapping("/{sessionId}")
-    public ChatInterviewAllResponse getInterview(@PathVariable String sessionId) {
+    public Mono<ChatInterviewAllResponse> getInterview(@PathVariable String sessionId) {
         return chatInterviewService.getInterview(sessionId);
     }
 
     @GetMapping("/{sessionId}/question")
-    public ChatQuestionResponse getCurrentQuestion(@PathVariable String sessionId) {
+    public Mono<ChatQuestionResponse> getCurrentQuestion(@PathVariable String sessionId) {
         return chatInterviewService.getCurrentQuestion(sessionId);
     }
 
     @PostMapping("/{sessionId}/answers")
-    public ChatProgressResponse submitAnswer(
+    public Mono<ChatProgressResponse> submitAnswer(
             @PathVariable String sessionId,
             @Valid @RequestBody ChatAnswerRequest request
     ) {
@@ -41,12 +42,12 @@ public class ChatInterviewController {
     }
 
     @PostMapping("/{sessionId}/complete")
-    public ChatProgressResponse completeInterview(@PathVariable String sessionId) {
+    public Mono<ChatProgressResponse> completeInterview(@PathVariable String sessionId) {
         return chatInterviewService.completeInterview(sessionId);
     }
 
     @PostMapping("/{sessionId}/quit")
-    public ChatProgressResponse quitInterview(@PathVariable String sessionId) {
+    public Mono<ChatProgressResponse> quitInterview(@PathVariable String sessionId) {
         return chatInterviewService.quitInterview(sessionId);
     }
 }

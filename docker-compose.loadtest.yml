@@ -1,0 +1,39 @@
+services:
+  redis-loadtest:
+    image: redis:7-alpine
+    ports:
+      - "6380:6379"
+
+  wiremock:
+    image: wiremock/wiremock:3.13.2
+    ports:
+      - "8089:8080"
+    volumes:
+      - ./load-test/wiremock/common:/home/wiremock/mappings/common:ro
+      - ./load-test/wiremock/scenarios/${MOCK_SCENARIO:-delay}:/home/wiremock/mappings/scenario:ro
+    command:
+      - --verbose
+      - --disable-http2-plain
+      - --no-request-journal
+      - --container-threads
+      - "50"
+      - --async-response-enabled
+      - --async-response-threads
+      - "400"
+
+  k6:
+    image: grafana/k6:2.1.0
+    profiles:
+      - tools
+    working_dir: /scripts
+    volumes:
+      - ./load-test:/scripts:ro
+      - ./load-test/results:/scripts/results
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      BASE_URL: ${BASE_URL:-http://host.docker.internal:8080}
+      WS_URL: ${WS_URL:-ws://host.docker.internal:8080}
+      VUS: ${VUS:-20}
+      DURATION: ${DURATION:-1m}
+      WS_TIMEOUT_MS: ${WS_TIMEOUT_MS:-20000}

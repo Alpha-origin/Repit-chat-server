@@ -8,7 +8,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health
+        include: ${MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE:health}
 
   endpoint:
     health:
@@ -19,5 +19,6 @@ repit:
     base-url: ${API_SERVER_URL}
 
 anthropic:
+  base-url: ${ANTHROPIC_BASE_URL:https://api.anthropic.com}
   api-key: ${ANTHROPIC_API_KEY}
   model: ${ANTHROPIC_MODEL:claude-sonnet-4-6}

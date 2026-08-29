@@ -2,52 +2,77 @@ package com.person.repit.interview.service.impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.person.repit.common.metrics.RepitMetrics;
 import com.person.repit.interview.dto.request.FollowQuestionAiRequest;
 import com.person.repit.interview.dto.response.FollowQuestionAiResponse;
+import com.person.repit.interview.service.AiRequestConcurrencyLimiter;
 import com.person.repit.interview.service.AiQuestionClient;
+import io.netty.handler.timeout.ReadTimeoutException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.RestClient;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.RejectedExecutionException;
 
 @Slf4j
 @Component
 public class AiQuestionClientImpl implements AiQuestionClient {
 
-    private static final String ANTHROPIC_VERSION = "2023-06-01";
-
-    private final RestClient restClient;
+    private final WebClient webClient;
     private final ObjectMapper objectMapper;
     private final String model;
+    private final RepitMetrics metrics;
+    private final AiRequestConcurrencyLimiter concurrencyLimiter;
 
     public AiQuestionClientImpl(
             ObjectMapper objectMapper,
-            @Value("${anthropic.api-key}") String apiKey,
-            @Value("${anthropic.model}") String model
+            @Value("${anthropic.model}") String model,
+            @Qualifier("anthropicWebClient") WebClient webClient,
+            RepitMetrics metrics,
+            AiRequestConcurrencyLimiter concurrencyLimiter
     ) {
         this.objectMapper = objectMapper;
         this.model = model;
-        this.restClient = RestClient.builder()
-                .baseUrl("https://api.anthropic.com")
-                .defaultHeader("x-api-key", apiKey)
-                .defaultHeader("anthropic-version", ANTHROPIC_VERSION)
-                .build();
+        this.metrics = metrics;
+        this.webClient = webClient;
+        this.concurrencyLimiter = concurrencyLimiter;
     }
 
     @Override
-    public FollowQuestionAiResponse decideFollowQuestion(FollowQuestionAiRequest request) {
-        try {
-            String body = restClient.post()
-                    .uri("/v1/messages")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .body(createRequestBody(request))
-                    .retrieve()
-                    .body(String.class);
+    public Mono<FollowQuestionAiResponse> decideFollowQuestion(FollowQuestionAiRequest request) {
+        return metrics.recordAnthropicRequest(
+                concurrencyLimiter.execute(executeRequest(request))
+                )
+                .doOnError(
+                        exception -> !isExpectedFallback(exception),
+                        exception -> log.error("[AI FAIL]", exception)
+                )
+                .onErrorReturn(FollowQuestionAiResponse.notRequired());
+    }
 
+    private boolean isExpectedFallback(Throwable exception) {
+        return exception instanceof RejectedExecutionException
+                || exception.getCause() instanceof ReadTimeoutException;
+    }
+
+    private Mono<FollowQuestionAiResponse> executeRequest(FollowQuestionAiRequest request) {
+        return webClient.post()
+                .uri("/v1/messages")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(createRequestBody(request))
+                .retrieve()
+                .bodyToMono(String.class)
+                .map(this::parseResponse);
+    }
+
+    private FollowQuestionAiResponse parseResponse(String body) {
+        try {
             JsonNode response = objectMapper.readTree(body);
 
             String text = extractText(response);
@@ -67,10 +92,10 @@ public class AiQuestionClientImpl implements AiQuestionClient {
 
             return result;
 
-        } catch (Exception e) {
-            log.error("[AI FAIL]", e);
-
-            return FollowQuestionAiResponse.notRequired();
+        } catch (RuntimeException exception) {
+            throw exception;
+        } catch (Exception exception) {
+            throw new IllegalStateException("Anthropic 응답 처리에 실패했습니다.", exception);
         }
     }
 
