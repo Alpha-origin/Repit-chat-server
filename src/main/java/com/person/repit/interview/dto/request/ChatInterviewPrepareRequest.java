@@ -1,6 +1,7 @@
 package com.person.repit.interview.dto.request;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.person.repit.interview.type.InterviewMode;
 import com.person.repit.interview.type.InterviewStatus;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -29,6 +30,9 @@ public class ChatInterviewPrepareRequest {
 
     @NotNull
     private InterviewStatus status;
+
+    @NotNull
+    private InterviewMode mode;
 
     @Valid
     @NotEmpty
