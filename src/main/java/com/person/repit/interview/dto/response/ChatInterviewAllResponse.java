@@ -77,6 +77,7 @@ public class ChatInterviewAllResponse {
     public static class QuestionResponse {
         private Long questionId;
         private Long parentId;
+        private Long followQuestionId;
         private QuestionType questionType;
         private String questionIntention;
         private String questionContent;
@@ -87,6 +88,7 @@ public class ChatInterviewAllResponse {
             return QuestionResponse.builder()
                     .questionId(question.getQuestionId())
                     .parentId(question.getParentId())
+                    .followQuestionId(question.getFollowQuestionId())
                     .questionType(question.getType())
                     .questionIntention(question.getIntention())
                     .questionContent(question.getContent())

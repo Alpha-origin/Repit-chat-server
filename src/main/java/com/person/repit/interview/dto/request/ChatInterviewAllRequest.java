@@ -76,6 +76,8 @@ public class ChatInterviewAllRequest {
     public static class QuestionRequest {
 
         private Long id;
+        private Long parentId;
+        private Long followQuestionId;
         private Long personaId;
         private String category;
         private String question;
@@ -85,6 +87,8 @@ public class ChatInterviewAllRequest {
         public static QuestionRequest from(ChatQuestion question) {
             return QuestionRequest.builder()
                     .id(question.getQuestionId())
+                    .parentId(question.getParentId())
+                    .followQuestionId(question.getFollowQuestionId())
                     .personaId(question.getAskedByPersonaId())
                     .category(question.getIntention())
                     .question(question.getContent())
