@@ -186,7 +186,10 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
             ChatQuestion followQuestion = ChatQuestion.builder()
                     .questionId(createFollowQuestionId(session))
                     .parentId(currentQuestion.getQuestionId())
-                    .followQuestionId(currentQuestion.getFollowQuestionId())
+                    .followQuestionId(createFollowQuestionId(
+                            session,
+                            currentQuestion.getQuestionId()
+                    ))
                     .type(QuestionType.FOLLOW)
                     .intention(currentQuestion.getIntention())
                     .content(aiResponse.getContent())
@@ -271,6 +274,14 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
 
     private String createKey(String sessionId) {
         return KEY_PREFIX + sessionId;
+    }
+
+    private long createUniqueFollowQuestionId(ChatInterviewSession session) {
+        return session.getQuestions().stream()
+                .filter(question -> question.getType() == QuestionType.FOLLOW)
+                .map(ChatQuestion::getQuestionId)
+                .min(Long::compareTo)
+                .orElse(0L) - 1L;
     }
 
     private long createFollowQuestionId(ChatInterviewSession session, Long originalQuestionId) {
