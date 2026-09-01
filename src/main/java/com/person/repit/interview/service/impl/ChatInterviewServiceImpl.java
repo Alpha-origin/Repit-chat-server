@@ -184,7 +184,7 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
 
         if (Boolean.TRUE.equals(aiResponse.getRequired())) {
             ChatQuestion followQuestion = ChatQuestion.builder()
-                    .questionId(createFollowQuestionId(session))
+                    .questionId(createUniqueFollowQuestionId(session))
                     .parentId(currentQuestion.getQuestionId())
                     .followQuestionId(createFollowQuestionId(
                             session,
