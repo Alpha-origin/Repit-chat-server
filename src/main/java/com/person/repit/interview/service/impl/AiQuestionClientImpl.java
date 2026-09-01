@@ -199,7 +199,7 @@ public class AiQuestionClientImpl implements AiQuestionClient {
                     복잡한 내부 구현 등 어려운 질문은 하지 마세요.
                     """;
 
-            case MEDIUM -> """
+            case NORMAL -> """
                     중간 난이도의 꼬리질문을 생성하세요.
                     실제 적용 방법이나 선택 근거 등을 확인하는 수준으로 질문하세요.
                     """;
