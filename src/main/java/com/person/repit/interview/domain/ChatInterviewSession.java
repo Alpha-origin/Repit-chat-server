@@ -1,6 +1,7 @@
 package com.person.repit.interview.domain;
 
 import com.person.repit.interview.type.InterviewLevel;
+import com.person.repit.interview.type.InterviewMode;
 import com.person.repit.interview.type.InterviewStatus;
 import lombok.*;
 
@@ -18,6 +19,7 @@ public class ChatInterviewSession {
     private Long interviewId;
     private Long userId;
     private InterviewLevel level;
+    private InterviewMode mode;
 
     @Builder.Default
     private InterviewStatus status = InterviewStatus.IN_PROGRESS;
