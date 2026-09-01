@@ -1,6 +1,7 @@
 package com.person.repit.interview.dto.response;
 
 import com.person.repit.interview.domain.ChatInterviewSession;
+import com.person.repit.interview.type.InterviewMode;
 import com.person.repit.interview.type.InterviewStatus;
 import lombok.Builder;
 import lombok.Getter;
@@ -13,6 +14,7 @@ public class ChatInterviewResponse {
     private Long userId;
     private InterviewStatus status;
     private int currentQuestionIndex;
+    private InterviewMode mode;
 
     public static ChatInterviewResponse from(ChatInterviewSession interview) {
         return ChatInterviewResponse.builder()
@@ -21,6 +23,7 @@ public class ChatInterviewResponse {
                 .userId(interview.getUserId())
                 .status(interview.getStatus())
                 .currentQuestionIndex(interview.getCurrentQuestionIndex())
+                .mode(interview.getMode())
                 .build();
     }
 }

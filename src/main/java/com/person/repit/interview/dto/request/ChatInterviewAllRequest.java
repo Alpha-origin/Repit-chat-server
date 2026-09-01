@@ -3,6 +3,7 @@ package com.person.repit.interview.dto.request;
 import com.person.repit.interview.domain.ChatAnswer;
 import com.person.repit.interview.domain.ChatInterviewSession;
 import com.person.repit.interview.domain.ChatQuestion;
+import com.person.repit.interview.type.InterviewMode;
 import com.person.repit.interview.type.InterviewStatus;
 import lombok.Builder;
 import lombok.Getter;
@@ -21,6 +22,7 @@ public class ChatInterviewAllRequest {
     private Long interviewId;
     private Long userId;
     private InterviewStatus status;
+    private InterviewMode mode;
     private LocalDateTime interviewCreatedAt;
     private List<ChatInterviewQnARequest> qnaRequests;
 
@@ -45,6 +47,7 @@ public class ChatInterviewAllRequest {
                 .interviewId(session.getInterviewId())
                 .userId(session.getUserId())
                 .status(session.getStatus())
+                .mode(session.getMode())
                 .interviewCreatedAt(session.getCreatedAt())
                 .qnaRequests(qnaRequests)
                 .build();
