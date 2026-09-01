@@ -42,7 +42,6 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
     private static final String KEY_PREFIX = "chat:interview:";
     private static final Duration SESSION_TTL = Duration.ofHours(3);
     private static final int ORIGINAL_QUESTIONS_PER_FOLLOW = 2;
-    private static final AtomicLong FOLLOW_QUESTION_SEQUENCE = new AtomicLong(-1);
 
     private final AiQuestionClient aiQuestionClient;
     private final ReactiveRedisTemplate<String, Object> redisTemplate;
@@ -184,7 +183,7 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
 
         if (Boolean.TRUE.equals(aiResponse.getRequired())) {
             ChatQuestion followQuestion = ChatQuestion.builder()
-                    .questionId(createFollowQuestionId())
+                    .questionId(createFollowQuestionId(session))
                     .parentId(currentQuestion.getQuestionId())
                     .type(QuestionType.FOLLOW)
                     .intention(currentQuestion.getIntention())
@@ -272,7 +271,11 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
         return KEY_PREFIX + sessionId;
     }
 
-    private long createFollowQuestionId() {
-        return FOLLOW_QUESTION_SEQUENCE.getAndDecrement();
+    private long createFollowQuestionId(ChatInterviewSession session) {
+        return session.getQuestions().stream()
+                .filter(question -> question.getType() == QuestionType.FOLLOW)
+                .map(ChatQuestion::getQuestionId)
+                .min(Long::compareTo)
+                .orElse(0L) - 1L;
     }
 }
