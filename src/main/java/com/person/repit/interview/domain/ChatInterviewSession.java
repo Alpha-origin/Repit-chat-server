@@ -16,7 +16,7 @@ public class ChatInterviewSession {
     private String sessionId;
     private Long interviewId;
     private Long userId;
-    private InterviewPersonality personality;
+    private InterviewType personality;
     private InterviewTone tone;
     private InterviewExpertise expertise;
     private InterviewLevel level;

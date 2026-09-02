@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.person.repit.interview.type.InterviewExpertise;
 import com.person.repit.interview.type.InterviewLevel;
 import com.person.repit.interview.type.InterviewMode;
-import com.person.repit.interview.type.InterviewPersonality;
+import com.person.repit.interview.type.InterviewType;
 import com.person.repit.interview.type.InterviewStatus;
 import com.person.repit.interview.type.InterviewTone;
 import jakarta.validation.Valid;
@@ -39,7 +39,7 @@ public class ChatInterviewPrepareRequest {
     private InterviewMode mode;
 
     @NotNull
-    private InterviewPersonality personality;
+    private InterviewType personality;
 
     @NotNull
     private InterviewTone tone;

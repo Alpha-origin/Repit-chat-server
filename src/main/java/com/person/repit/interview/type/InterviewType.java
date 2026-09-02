@@ -1,6 +1,6 @@
 package com.person.repit.interview.type;
 
-public enum InterviewPersonality {
+public enum InterviewType {
     FRIENDLY,
     REALISTIC,
     METICULOUS

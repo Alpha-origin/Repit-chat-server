@@ -3,7 +3,7 @@ package com.person.repit.interview.dto.request;
 import com.person.repit.interview.domain.ChatQuestion;
 import com.person.repit.interview.type.InterviewExpertise;
 import com.person.repit.interview.type.InterviewLevel;
-import com.person.repit.interview.type.InterviewPersonality;
+import com.person.repit.interview.type.InterviewType;
 import com.person.repit.interview.type.InterviewTone;
 import com.person.repit.interview.type.QuestionType;
 import lombok.Builder;
@@ -17,7 +17,7 @@ public class FollowQuestionAiRequest {
     private Long interviewId;
     private Long userId;
     private Long personaId;
-    private InterviewPersonality personality;
+    private InterviewType personality;
     private InterviewTone tone;
     private InterviewExpertise expertise;
     private InterviewLevel level;
@@ -37,7 +37,7 @@ public class FollowQuestionAiRequest {
             Long interviewId,
             Long userId,
             Long personaId,
-            InterviewPersonality personality,
+            InterviewType personality,
             InterviewTone tone,
             InterviewExpertise expertise,
             InterviewLevel level,
