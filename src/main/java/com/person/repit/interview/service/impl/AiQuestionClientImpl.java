@@ -125,7 +125,7 @@ public class AiQuestionClientImpl implements AiQuestionClient {
                 - 원질문의 내용(question)
                 - 원질문의 기대 답변(expectedAnswer)
                 - 지원자의 직전 답변
-                - 면접관 페르소나 : FRIENDLY, NEUTRAL, STRESS
+                - 면접관의 성격, 말투, 전문 분야
                 - 면접 난이도
                 
                 다음 절차에 따라 평가하세요.
@@ -160,11 +160,6 @@ public class AiQuestionClientImpl implements AiQuestionClient {
                 - 꼬리질문의 의도는 핵심만 간결하게 작성합니다.
                 - 현재 답변만 평가하며 이전 꼬리질문의 깊이나 개수는 고려하지 않습니다.
                 
-                페르소나별 말투:
-                - FRIENDLY : 부드럽고 격려하는 말투
-                - NEUTRAL : 감정 표현 없이 담백하고 명확한 말투
-                - STRESS : 불필요한 완곡 표현 없이 직설적이고 압박감 있는 말투
-
                 출력 규칙:
                 - 반드시 유효한 JSON 객체 하나만 출력합니다.
                 - 설명, 마크다운, 코드 블록, 인사말 등 JSON 이외의 내용은 출력하지 않습니다.
@@ -218,6 +213,13 @@ public class AiQuestionClientImpl implements AiQuestionClient {
                 interviewId: %d
                 userId: %d
                 personaId: %d
+                personality: %s
+                tone: %s
+                expertise: %s
+                level: %s
+
+                [면접관 적용 지침]
+                %s
 
                 [현재 질문]
                 questionId: %d
@@ -237,6 +239,11 @@ public class AiQuestionClientImpl implements AiQuestionClient {
                 request.getInterviewId(),
                 request.getUserId(),
                 request.getPersonaId(),
+                request.getPersonality(),
+                request.getTone(),
+                request.getExpertise(),
+                request.getLevel(),
+                createInterviewInstruction(request),
                 request.getQuestionId(),
                 request.getParentId(),
                 request.getQuestionType(),
@@ -246,6 +253,26 @@ public class AiQuestionClientImpl implements AiQuestionClient {
                 request.getResponseTime(),
                 request.getAnswerContent()
         );
+    }
+
+    private String createInterviewInstruction(FollowQuestionAiRequest request) {
+        String personalityInstruction = switch (request.getPersonality()) {
+            case FRIENDLY -> "지원자가 편안하게 답할 수 있도록 친근하게 질문하세요.";
+            case REALISTIC -> "실무 면접처럼 현실적인 상황과 판단 근거에 집중하세요.";
+            case METICULOUS -> "답변의 모호한 부분과 빠진 조건을 꼼꼼하게 확인하세요.";
+        };
+        String toneInstruction = switch (request.getTone()) {
+            case GENTLE -> "부드럽고 정중한 말투를 사용하세요.";
+            case DIRECT -> "완곡한 표현을 줄이고 핵심을 직설적으로 질문하세요.";
+            case PRESSURING -> "짧고 단호하며 압박감 있는 말투를 사용하되 모욕적인 표현은 사용하지 마세요.";
+        };
+        String expertiseInstruction = switch (request.getExpertise()) {
+            case FRONTEND -> "프론트엔드 기술 면접관의 관점에서 질문하세요.";
+            case BACKEND -> "백엔드 기술 면접관의 관점에서 질문하세요.";
+        };
+
+        return String.join("\n", personalityInstruction, toneInstruction,
+                expertiseInstruction, createLevelStructure(request));
     }
 
     private String extractText(JsonNode response) {

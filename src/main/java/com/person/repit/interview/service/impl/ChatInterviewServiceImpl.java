@@ -20,7 +20,6 @@ import com.person.repit.interview.exception.InterviewSessionNotFoundException;
 import com.person.repit.interview.service.AiQuestionClient;
 import com.person.repit.interview.service.ApiServerClient;
 import com.person.repit.interview.service.ChatInterviewService;
-import com.person.repit.interview.type.InterviewLevel;
 import com.person.repit.interview.type.InterviewStatus;
 import com.person.repit.interview.type.QuestionType;
 import lombok.RequiredArgsConstructor;
@@ -73,7 +72,10 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
                     .interviewId(request.getInterviewId())
                     .userId(request.getUserId())
                     .mode(request.getMode())
-                    .level(InterviewLevel.NORMAL)
+                    .personality(request.getPersonality())
+                    .tone(request.getTone())
+                    .expertise(request.getExpertise())
+                    .level(request.getLevel())
                     .status(request.getStatus())
                     .questions(new ArrayList<>(questions))
                     .answers(new ArrayList<>())
@@ -162,6 +164,9 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
                 session.getInterviewId(),
                 session.getUserId(),
                 currentQuestion.getAskedByPersonaId(),
+                session.getPersonality(),
+                session.getTone(),
+                session.getExpertise(),
                 session.getLevel(),
                 currentQuestion,
                 request.getContent(),
