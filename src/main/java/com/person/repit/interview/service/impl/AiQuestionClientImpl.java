@@ -215,7 +215,7 @@ public class AiQuestionClientImpl implements AiQuestionClient {
                 personaId: %d
                 personality: %s
                 tone: %s
-                expertise: %s
+                major: %s
                 level: %s
 
                 [면접관 적용 지침]
@@ -241,7 +241,7 @@ public class AiQuestionClientImpl implements AiQuestionClient {
                 request.getPersonaId(),
                 request.getPersonality(),
                 request.getTone(),
-                request.getExpertise(),
+                request.getMajor(),
                 request.getLevel(),
                 createInterviewInstruction(request),
                 request.getQuestionId(),
@@ -266,13 +266,13 @@ public class AiQuestionClientImpl implements AiQuestionClient {
             case DIRECT -> "완곡한 표현을 줄이고 핵심을 직설적으로 질문하세요.";
             case PRESSURING -> "짧고 단호하며 압박감 있는 말투를 사용하되 모욕적인 표현은 사용하지 마세요.";
         };
-        String expertiseInstruction = switch (request.getExpertise()) {
+        String majorInstruction = switch (request.getMajor()) {
             case FRONTEND -> "프론트엔드 기술 면접관의 관점에서 질문하세요.";
             case BACKEND -> "백엔드 기술 면접관의 관점에서 질문하세요.";
         };
 
         return String.join("\n", personalityInstruction, toneInstruction,
-                expertiseInstruction, createLevelStructure(request));
+                majorInstruction, createLevelStructure(request));
     }
 
     private String extractText(JsonNode response) {

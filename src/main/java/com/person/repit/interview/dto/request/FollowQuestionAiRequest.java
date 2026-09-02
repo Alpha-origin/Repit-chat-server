@@ -1,8 +1,8 @@
 package com.person.repit.interview.dto.request;
 
 import com.person.repit.interview.domain.ChatQuestion;
-import com.person.repit.interview.type.InterviewExpertise;
 import com.person.repit.interview.type.InterviewLevel;
+import com.person.repit.interview.type.InterviewMajor;
 import com.person.repit.interview.type.InterviewType;
 import com.person.repit.interview.type.InterviewTone;
 import com.person.repit.interview.type.QuestionType;
@@ -19,7 +19,7 @@ public class FollowQuestionAiRequest {
     private Long personaId;
     private InterviewType personality;
     private InterviewTone tone;
-    private InterviewExpertise expertise;
+    private InterviewMajor major;
     private InterviewLevel level;
 
     private Long questionId;
@@ -39,7 +39,7 @@ public class FollowQuestionAiRequest {
             Long personaId,
             InterviewType personality,
             InterviewTone tone,
-            InterviewExpertise expertise,
+            InterviewMajor major,
             InterviewLevel level,
             ChatQuestion question,
             String answerContent,
@@ -52,7 +52,7 @@ public class FollowQuestionAiRequest {
                 .personaId(personaId)
                 .personality(personality)
                 .tone(tone)
-                .expertise(expertise)
+                .major(major)
                 .level(level)
                 .questionId(question.getQuestionId())
                 .parentId(question.getParentId())

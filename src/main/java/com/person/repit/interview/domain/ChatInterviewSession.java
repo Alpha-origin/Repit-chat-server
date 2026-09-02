@@ -18,7 +18,7 @@ public class ChatInterviewSession {
     private Long userId;
     private InterviewType personality;
     private InterviewTone tone;
-    private InterviewExpertise expertise;
+    private InterviewMajor major;
     private InterviewLevel level;
     private InterviewMode mode;
 

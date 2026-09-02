@@ -74,7 +74,7 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
                     .mode(request.getMode())
                     .personality(request.getPersonality())
                     .tone(request.getTone())
-                    .expertise(request.getExpertise())
+                    .major(request.getMajor())
                     .level(request.getLevel())
                     .status(request.getStatus())
                     .questions(new ArrayList<>(questions))
@@ -166,7 +166,7 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
                 currentQuestion.getAskedByPersonaId(),
                 session.getPersonality(),
                 session.getTone(),
-                session.getExpertise(),
+                session.getMajor(),
                 session.getLevel(),
                 currentQuestion,
                 request.getContent(),

@@ -1,6 +1,6 @@
 package com.person.repit.interview.type;
 
-public enum InterviewExpertise {
+public enum InterviewMajor {
     FRONTEND,
     BACKEND
 }

@@ -1,8 +1,8 @@
 package com.person.repit.interview.dto.request;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.person.repit.interview.type.InterviewExpertise;
 import com.person.repit.interview.type.InterviewLevel;
+import com.person.repit.interview.type.InterviewMajor;
 import com.person.repit.interview.type.InterviewMode;
 import com.person.repit.interview.type.InterviewType;
 import com.person.repit.interview.type.InterviewStatus;
@@ -45,7 +45,7 @@ public class ChatInterviewPrepareRequest {
     private InterviewTone tone;
 
     @NotNull
-    private InterviewExpertise expertise;
+    private InterviewMajor major;
 
     @NotNull
     private InterviewLevel level;
