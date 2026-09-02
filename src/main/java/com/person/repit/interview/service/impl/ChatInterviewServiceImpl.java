@@ -130,7 +130,12 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
                     .build();
 
             session.getAnswers().add(answer);
-            log.debug("[ANSWER SAVED] qId={}", currentQuestion.getQuestionId());
+            log.info(
+                    "[ANSWER ACCEPTED] sessionId={}, interviewId={}, questionId={}",
+                    session.getSessionId(),
+                    session.getInterviewId(),
+                    currentQuestion.getQuestionId()
+            );
 
             return createFollowQuestionIfRequired(session, currentQuestion, request)
                     .flatMap(aiResponse -> moveToNextQuestion(session, currentQuestion, aiResponse));
@@ -185,7 +190,13 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
             ChatQuestion currentQuestion,
             FollowQuestionAiResponse aiResponse
     ) {
-        log.debug("[AI RESULT] required={}", aiResponse.getRequired());
+        log.info(
+                "[FOLLOW DECISION] sessionId={}, questionId={}, required={}, score={}",
+                session.getSessionId(),
+                currentQuestion.getQuestionId(),
+                aiResponse.getRequired(),
+                aiResponse.getScore()
+        );
 
         if (Boolean.TRUE.equals(aiResponse.getRequired())) {
             ChatQuestion followQuestion = ChatQuestion.builder()
