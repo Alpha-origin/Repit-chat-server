@@ -31,7 +31,6 @@ import reactor.core.publisher.Mono;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.concurrent.atomic.AtomicLong;
 
 @Service
 @RequiredArgsConstructor
@@ -207,7 +206,7 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
                             currentQuestion.getQuestionId()
                     ))
                     .type(QuestionType.FOLLOW)
-                    .intention(currentQuestion.getIntention())
+                    .intention(aiResponse.getIntention())
                     .content(aiResponse.getContent())
                     .expectedAnswer(aiResponse.getExpectedAnswer())
                     .askedByPersonaId(currentQuestion.getAskedByPersonaId())
