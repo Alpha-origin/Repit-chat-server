@@ -3,6 +3,7 @@ package com.person.repit.interview.dto.response;
 import com.person.repit.interview.domain.ChatAnswer;
 import com.person.repit.interview.domain.ChatInterviewSession;
 import com.person.repit.interview.domain.ChatQuestion;
+import com.person.repit.interview.type.InterviewMode;
 import com.person.repit.interview.type.InterviewStatus;
 import com.person.repit.interview.type.QuestionType;
 import lombok.Builder;
@@ -21,6 +22,7 @@ public class ChatInterviewAllResponse {
     private Long interviewId;
     private Long userId;
     private InterviewStatus status;
+    private InterviewMode mode;
     private int currentQuestionIndex;
     private LocalDateTime createdAt;
     private List<ChatInterviewQnAResponse> qnAResponses;
@@ -46,6 +48,7 @@ public class ChatInterviewAllResponse {
                 .interviewId(session.getInterviewId())
                 .userId(session.getUserId())
                 .status(session.getStatus())
+                .mode(session.getMode())
                 .currentQuestionIndex(session.getCurrentQuestionIndex())
                 .createdAt(session.getCreatedAt())
                 .qnAResponses(qnAResponses)
@@ -74,6 +77,7 @@ public class ChatInterviewAllResponse {
     public static class QuestionResponse {
         private Long questionId;
         private Long parentId;
+        private Long followQuestionId;
         private QuestionType questionType;
         private String questionIntention;
         private String questionContent;
@@ -84,6 +88,7 @@ public class ChatInterviewAllResponse {
             return QuestionResponse.builder()
                     .questionId(question.getQuestionId())
                     .parentId(question.getParentId())
+                    .followQuestionId(question.getFollowQuestionId())
                     .questionType(question.getType())
                     .questionIntention(question.getIntention())
                     .questionContent(question.getContent())

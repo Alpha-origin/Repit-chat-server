@@ -14,6 +14,7 @@ import java.util.List;
 public class ChatQuestion {
     private Long questionId;
     private Long parentId;
+    private Long followQuestionId;
     private QuestionType type;
     private String intention;
     private String content;

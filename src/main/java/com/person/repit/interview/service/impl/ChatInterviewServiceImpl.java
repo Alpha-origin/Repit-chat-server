@@ -20,7 +20,6 @@ import com.person.repit.interview.exception.InterviewSessionNotFoundException;
 import com.person.repit.interview.service.AiQuestionClient;
 import com.person.repit.interview.service.ApiServerClient;
 import com.person.repit.interview.service.ChatInterviewService;
-import com.person.repit.interview.type.InterviewLevel;
 import com.person.repit.interview.type.InterviewStatus;
 import com.person.repit.interview.type.QuestionType;
 import lombok.RequiredArgsConstructor;
@@ -32,7 +31,6 @@ import reactor.core.publisher.Mono;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.concurrent.atomic.AtomicLong;
 
 @Service
 @RequiredArgsConstructor
@@ -42,7 +40,6 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
     private static final String KEY_PREFIX = "chat:interview:";
     private static final Duration SESSION_TTL = Duration.ofHours(3);
     private static final int ORIGINAL_QUESTIONS_PER_FOLLOW = 2;
-    private static final AtomicLong FOLLOW_QUESTION_SEQUENCE = new AtomicLong(-1);
 
     private final AiQuestionClient aiQuestionClient;
     private final ReactiveRedisTemplate<String, Object> redisTemplate;
@@ -73,7 +70,11 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
                     .sessionId(request.getSessionId())
                     .interviewId(request.getInterviewId())
                     .userId(request.getUserId())
-                    .level(InterviewLevel.MEDIUM)
+                    .mode(request.getMode())
+                    .personality(request.getPersonality())
+                    .tone(request.getTone())
+                    .major(request.getMajor())
+                    .level(request.getLevel())
                     .status(request.getStatus())
                     .questions(new ArrayList<>(questions))
                     .answers(new ArrayList<>())
@@ -128,7 +129,12 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
                     .build();
 
             session.getAnswers().add(answer);
-            log.debug("[ANSWER SAVED] qId={}", currentQuestion.getQuestionId());
+            log.info(
+                    "[ANSWER ACCEPTED] sessionId={}, interviewId={}, questionId={}",
+                    session.getSessionId(),
+                    session.getInterviewId(),
+                    currentQuestion.getQuestionId()
+            );
 
             return createFollowQuestionIfRequired(session, currentQuestion, request)
                     .flatMap(aiResponse -> moveToNextQuestion(session, currentQuestion, aiResponse));
@@ -162,6 +168,9 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
                 session.getInterviewId(),
                 session.getUserId(),
                 currentQuestion.getAskedByPersonaId(),
+                session.getPersonality(),
+                session.getTone(),
+                session.getMajor(),
                 session.getLevel(),
                 currentQuestion,
                 request.getContent(),
@@ -180,14 +189,24 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
             ChatQuestion currentQuestion,
             FollowQuestionAiResponse aiResponse
     ) {
-        log.debug("[AI RESULT] required={}", aiResponse.getRequired());
+        log.info(
+                "[FOLLOW DECISION] sessionId={}, questionId={}, required={}, score={}",
+                session.getSessionId(),
+                currentQuestion.getQuestionId(),
+                aiResponse.getRequired(),
+                aiResponse.getScore()
+        );
 
         if (Boolean.TRUE.equals(aiResponse.getRequired())) {
             ChatQuestion followQuestion = ChatQuestion.builder()
-                    .questionId(createFollowQuestionId())
+                    .questionId(createUniqueFollowQuestionId(session))
                     .parentId(currentQuestion.getQuestionId())
+                    .followQuestionId(createFollowQuestionId(
+                            session,
+                            currentQuestion.getQuestionId()
+                    ))
                     .type(QuestionType.FOLLOW)
-                    .intention(currentQuestion.getIntention())
+                    .intention(aiResponse.getIntention())
                     .content(aiResponse.getContent())
                     .expectedAnswer(aiResponse.getExpectedAnswer())
                     .askedByPersonaId(currentQuestion.getAskedByPersonaId())
@@ -272,7 +291,18 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
         return KEY_PREFIX + sessionId;
     }
 
-    private long createFollowQuestionId() {
-        return FOLLOW_QUESTION_SEQUENCE.getAndDecrement();
+    private long createUniqueFollowQuestionId(ChatInterviewSession session) {
+        return session.getQuestions().stream()
+                .filter(question -> question.getType() == QuestionType.FOLLOW)
+                .map(ChatQuestion::getQuestionId)
+                .min(Long::compareTo)
+                .orElse(0L) - 1L;
+    }
+
+    private long createFollowQuestionId(ChatInterviewSession session, Long originalQuestionId) {
+        return session.getQuestions().stream()
+                .filter(question -> question.getType() == QuestionType.FOLLOW)
+                .filter(question -> originalQuestionId.equals(question.getParentId()))
+                .count() + 1L;
     }
 }

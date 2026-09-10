@@ -1,7 +1,12 @@
 package com.person.repit.interview.dto.request;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.person.repit.interview.type.InterviewLevel;
+import com.person.repit.interview.type.InterviewMajor;
+import com.person.repit.interview.type.InterviewMode;
+import com.person.repit.interview.type.InterviewType;
 import com.person.repit.interview.type.InterviewStatus;
+import com.person.repit.interview.type.InterviewTone;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
@@ -29,6 +34,21 @@ public class ChatInterviewPrepareRequest {
 
     @NotNull
     private InterviewStatus status;
+
+    @NotNull
+    private InterviewMode mode;
+
+    @NotNull
+    private InterviewType personality;
+
+    @NotNull
+    private InterviewTone tone;
+
+    @NotNull
+    private InterviewMajor major;
+
+    @NotNull
+    private InterviewLevel level;
 
     @Valid
     @NotEmpty

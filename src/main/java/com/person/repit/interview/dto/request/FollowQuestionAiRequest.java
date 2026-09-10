@@ -2,6 +2,9 @@ package com.person.repit.interview.dto.request;
 
 import com.person.repit.interview.domain.ChatQuestion;
 import com.person.repit.interview.type.InterviewLevel;
+import com.person.repit.interview.type.InterviewMajor;
+import com.person.repit.interview.type.InterviewType;
+import com.person.repit.interview.type.InterviewTone;
 import com.person.repit.interview.type.QuestionType;
 import lombok.Builder;
 import lombok.Getter;
@@ -14,6 +17,9 @@ public class FollowQuestionAiRequest {
     private Long interviewId;
     private Long userId;
     private Long personaId;
+    private InterviewType personality;
+    private InterviewTone tone;
+    private InterviewMajor major;
     private InterviewLevel level;
 
     private Long questionId;
@@ -31,6 +37,9 @@ public class FollowQuestionAiRequest {
             Long interviewId,
             Long userId,
             Long personaId,
+            InterviewType personality,
+            InterviewTone tone,
+            InterviewMajor major,
             InterviewLevel level,
             ChatQuestion question,
             String answerContent,
@@ -41,6 +50,9 @@ public class FollowQuestionAiRequest {
                 .interviewId(interviewId)
                 .userId(userId)
                 .personaId(personaId)
+                .personality(personality)
+                .tone(tone)
+                .major(major)
                 .level(level)
                 .questionId(question.getQuestionId())
                 .parentId(question.getParentId())
