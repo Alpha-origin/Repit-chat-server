@@ -26,6 +26,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.ReactiveRedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
@@ -57,7 +58,10 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
                             .questionId(question.getId().longValue())
                             .parentId(null)
                             .type(QuestionType.ORIGINAL)
-                            .intention(question.getCategory())
+                            .category(question.getCategory())
+                            .intention(StringUtils.hasText(question.getIntention())
+                                    ? question.getIntention()
+                                    : null)
                             .content(question.getQuestion())
                             .expectedAnswer(question.getExpectedAnswer())
                             .basedOn(question.getBasedOn())
