@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
@@ -228,6 +229,7 @@ public class AiQuestionClientImpl implements AiQuestionClient {
                 questionId: %d
                 parentId: %s
                 questionType: %s
+                questionCategory: %s
                 questionIntention: %s
                 questionContent: %s
                 expectedAnswer: %s
@@ -250,12 +252,17 @@ public class AiQuestionClientImpl implements AiQuestionClient {
                 request.getQuestionId(),
                 request.getParentId(),
                 request.getQuestionType(),
-                request.getQuestionIntention(),
+                request.getQuestionCategory(),
+                textOrNone(request.getQuestionIntention()),
                 request.getQuestionContent(),
                 request.getExpectedAnswer(),
                 request.getResponseTime(),
                 request.getAnswerContent()
         );
+    }
+
+    private String textOrNone(String value) {
+        return StringUtils.hasText(value) ? value : "없음";
     }
 
     private String createInterviewInstruction(FollowQuestionAiRequest request) {
