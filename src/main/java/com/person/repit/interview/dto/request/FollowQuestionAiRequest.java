@@ -25,6 +25,7 @@ public class FollowQuestionAiRequest {
     private Long questionId;
     private Long parentId;
     private QuestionType questionType;
+    private String questionCategory;
     private String questionIntention;
     private String questionContent;
     private String expectedAnswer;
@@ -57,6 +58,7 @@ public class FollowQuestionAiRequest {
                 .questionId(question.getQuestionId())
                 .parentId(question.getParentId())
                 .questionType(question.getType())
+                .questionCategory(question.getCategory())
                 .questionIntention(question.getIntention())
                 .questionContent(question.getContent())
                 .expectedAnswer(question.getExpectedAnswer())
