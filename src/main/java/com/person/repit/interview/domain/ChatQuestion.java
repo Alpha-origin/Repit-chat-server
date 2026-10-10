@@ -1,5 +1,6 @@
 package com.person.repit.interview.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.person.repit.interview.type.QuestionType;
 import lombok.*;
 
@@ -11,11 +12,13 @@ import java.util.List;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class ChatQuestion {
     private Long questionId;
     private Long parentId;
     private Long followQuestionId;
     private QuestionType type;
+    private String category;
     private String intention;
     private String content;
     private String expectedAnswer;
