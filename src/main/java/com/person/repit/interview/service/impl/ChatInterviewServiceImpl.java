@@ -210,7 +210,11 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
                             currentQuestion.getQuestionId()
                     ))
                     .type(QuestionType.FOLLOW)
-                    .intention(aiResponse.getIntention())
+                    .category(currentQuestion.getCategory())
+                    .intention(firstText(
+                            aiResponse.getIntention(),
+                            currentQuestion.getIntention()
+                    ))
                     .content(aiResponse.getContent())
                     .expectedAnswer(aiResponse.getExpectedAnswer())
                     .askedByPersonaId(currentQuestion.getAskedByPersonaId())
@@ -308,5 +312,14 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
                 .filter(question -> question.getType() == QuestionType.FOLLOW)
                 .filter(question -> originalQuestionId.equals(question.getParentId()))
                 .count() + 1L;
+    }
+
+    private String firstText(String... values) {
+        for (String value : values) {
+            if (StringUtils.hasText(value)) {
+                return value;
+            }
+        }
+        return null;
     }
 }
