@@ -17,19 +17,25 @@ import java.util.UUID;
 @Component
 public class ApiServerClient {
 
+    private static final String INTERNAL_TOKEN_HEADER = "X-Internal-Token";
+
     private final WebClient webClient;
     private final String baseUrl;
+    private final String internalToken;
     private final RepitMetrics metrics;
 
     public ApiServerClient(
             @Value("${repit.api-server.base-url}") String baseUrl,
+            @Value("${repit.api-server.internal-token:}") String internalToken,
             WebClient.Builder webClientBuilder,
             RepitMetrics metrics
     ) {
         this.baseUrl = baseUrl;
+        this.internalToken = internalToken.trim();
         this.metrics = metrics;
 
         log.info("API SERVER URL = {}", baseUrl);
+        log.info("API INTERNAL TOKEN = {}", this.internalToken.isEmpty() ? "설정 안 됨" : "설정됨");
 
         this.webClient = webClientBuilder
                 .baseUrl(baseUrl)
@@ -73,10 +79,16 @@ public class ApiServerClient {
                 qnaCount
         );
 
+        WebClient.RequestBodySpec requestSpec = webClient.post()
+                .uri("/api/interviews/result")
+                .contentType(MediaType.APPLICATION_JSON);
+
+        if (!internalToken.isEmpty()) {
+            requestSpec.header(INTERNAL_TOKEN_HEADER, internalToken);
+        }
+
         return metrics.recordApiServerRequest(
-                webClient.post()
-                        .uri("/api/interviews/result")
-                        .contentType(MediaType.APPLICATION_JSON)
+                requestSpec
                         .bodyValue(request)
                         .retrieve()
                         .toBodilessEntity()
