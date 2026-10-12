@@ -23,6 +23,7 @@ logging:
 repit:
   api-server:
     base-url: https://wildcat-startle-rope.ngrok-free.dev
+    internal-token: ${INTERNAL_AUTH_TOKEN:}
 
 anthropic:
   base-url: ${ANTHROPIC_BASE_URL:https://api.anthropic.com}
