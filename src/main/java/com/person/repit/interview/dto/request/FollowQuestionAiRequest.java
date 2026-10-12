@@ -25,6 +25,7 @@ public class FollowQuestionAiRequest {
     private Long questionId;
     private Long parentId;
     private QuestionType questionType;
+    private String questionCategory;
     private String questionIntention;
     private String questionContent;
     private String expectedAnswer;
@@ -45,6 +46,8 @@ public class FollowQuestionAiRequest {
             String answerContent,
             Integer responseTime
     ) {
+        boolean legacy = question.getCategory() == null;
+
         return FollowQuestionAiRequest.builder()
                 .sessionId(sessionId)
                 .interviewId(interviewId)
@@ -57,7 +60,8 @@ public class FollowQuestionAiRequest {
                 .questionId(question.getQuestionId())
                 .parentId(question.getParentId())
                 .questionType(question.getType())
-                .questionIntention(question.getIntention())
+                .questionCategory(legacy ? question.getIntention() : question.getCategory())
+                .questionIntention(legacy ? null : question.getIntention())
                 .questionContent(question.getContent())
                 .expectedAnswer(question.getExpectedAnswer())
                 .answerContent(answerContent)

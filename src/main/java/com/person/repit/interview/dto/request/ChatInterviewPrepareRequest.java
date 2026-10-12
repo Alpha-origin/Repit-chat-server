@@ -68,6 +68,8 @@ public class ChatInterviewPrepareRequest {
         @NotBlank
         private String question;
 
+        private String intention;
+
         private String expectedAnswer;
 
         private List<String> basedOn;

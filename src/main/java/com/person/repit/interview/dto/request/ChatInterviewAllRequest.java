@@ -80,17 +80,21 @@ public class ChatInterviewAllRequest {
         private Long followQuestionId;
         private Long personaId;
         private String category;
+        private String intention;
         private String question;
         private String expectedAnswer;
         private List<String> basedOn;
 
         public static QuestionRequest from(ChatQuestion question) {
+            boolean legacy = question.getCategory() == null;
+
             return QuestionRequest.builder()
                     .id(question.getQuestionId())
                     .parentId(question.getParentId())
                     .followQuestionId(question.getFollowQuestionId())
                     .personaId(question.getAskedByPersonaId())
-                    .category(question.getIntention())
+                    .category(legacy ? question.getIntention() : question.getCategory())
+                    .intention(legacy ? null : question.getIntention())
                     .question(question.getContent())
                     .expectedAnswer(question.getExpectedAnswer())
                     .basedOn(question.getBasedOn())
