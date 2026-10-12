@@ -37,4 +37,29 @@ class FollowQuestionAiRequestTest {
         assertThat(request.getQuestionIntention())
                 .isEqualTo("분산락을 선택한 이유를 설명할 수 있는지");
     }
+
+    @Test
+    void 기존_세션은_의도에_저장된_카테고리만_전달한다() {
+        ChatQuestion question = ChatQuestion.builder()
+                .questionId(1L)
+                .intention("tech_choice")
+                .build();
+
+        FollowQuestionAiRequest request = FollowQuestionAiRequest.of(
+                "session-id",
+                1L,
+                2L,
+                3L,
+                InterviewType.FRIENDLY,
+                InterviewTone.GENTLE,
+                InterviewMajor.BACKEND,
+                InterviewLevel.NORMAL,
+                question,
+                "답변",
+                10
+        );
+
+        assertThat(request.getQuestionCategory()).isEqualTo("tech_choice");
+        assertThat(request.getQuestionIntention()).isNull();
+    }
 }
