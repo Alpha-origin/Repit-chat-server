@@ -17,6 +17,7 @@ management:
 repit:
   api-server:
     base-url: ${API_SERVER_URL}
+    internal-token: ${INTERNAL_AUTH_TOKEN:}
 
 anthropic:
   base-url: ${ANTHROPIC_BASE_URL:https://api.anthropic.com}
