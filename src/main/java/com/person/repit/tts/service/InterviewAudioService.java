@@ -60,7 +60,7 @@ public class InterviewAudioService {
         if (!scheduler.hasJob(session.getSessionId(), question.getQuestionId())) {
             return registerAndWait(session, question, waitSeconds);
         }
-        scheduler.promote(session.getSessionId(), question.getQuestionId());
+        scheduler.changePriority(session.getSessionId(), question.getQuestionId(), 0);
         return waitForResult(session.getSessionId(), question.getQuestionId(), waitSeconds);
     }
 
