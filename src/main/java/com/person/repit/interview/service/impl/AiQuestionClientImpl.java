@@ -146,6 +146,7 @@ public class AiQuestionClientImpl implements AiQuestionClient {
                 - expectedAnswer는 지원자의 답변과 글자 그대로 일치해야 하는 정답이 아니라, 답변을 비교하기 위한 참고 자료입니다.
                 - 꼬리질문에서도 원질문의 검증 포인트를 유지하고 질문의 초점을 다른 기술이나 주제로 바꾸지 않습니다.
                 - 원질문, expectedAnswer, 지원자의 답변에 없는 기술 스택, 수치, 장애 상황, 구현 방식을 새로 지어내지 않습니다.
+                - 면접관 직책이 TECH가 아니면 [면접관 적용 지침]의 직책 지침을 우선합니다.
                 
                 점수 기준:
                 - 0점 : "잘 모르겠습니다.", "제가 모르는 부분입니다" 등 모든다고 명시한 경우
@@ -228,6 +229,7 @@ public class AiQuestionClientImpl implements AiQuestionClient {
                 tone: %s
                 major: %s
                 level: %s
+                role: %s
 
                 [면접관 적용 지침]
                 %s
@@ -253,8 +255,9 @@ public class AiQuestionClientImpl implements AiQuestionClient {
                 request.getPersonaId(),
                 request.getPersonality(),
                 request.getTone(),
-                request.getMajor(),
+                request.getMajor() == null ? "없음" : request.getMajor(),
                 request.getLevel(),
+                request.getRole() == null ? "TECH" : request.getRole(),
                 createInterviewInstruction(request),
                 request.getQuestionId(),
                 request.getParentId(),
@@ -284,12 +287,26 @@ public class AiQuestionClientImpl implements AiQuestionClient {
             case PRESSURING -> "짧고 단호하며 압박감 있는 말투를 사용하되 모욕적인 표현은 사용하지 마세요.";
         };
         String majorInstruction = switch (request.getMajor()) {
+            case null -> "";
             case FRONTEND -> "프론트엔드 기술 면접관의 관점에서 질문하세요.";
             case BACKEND -> "백엔드 기술 면접관의 관점에서 질문하세요.";
         };
 
-        return String.join("\n", personalityInstruction, toneInstruction,
+        return String.join("\n", createRoleInstruction(request), personalityInstruction, toneInstruction,
                 majorInstruction, createLevelStructure(request));
+    }
+
+    private String createRoleInstruction(FollowQuestionAiRequest request) {
+        if (request.getRole() == null) {
+            return "기술적 근거와 트레이드오프를 확인하세요.";
+        }
+        return switch (request.getRole()) {
+            case TECH -> "기술적 근거와 트레이드오프를 확인하세요.";
+            case HR -> "지원 동기와 경험의 구체성, 협업 방식을 확인하세요. 기술 구현을 깊게 묻지 마세요.";
+            case CEO -> "우선순위 판단과 사업적 영향을 확인하세요. 기술 구현을 깊게 묻지 마세요.";
+            case PM -> "사용자 가치, 우선순위, 이해관계자 조율을 확인하세요. 기술 구현을 깊게 묻지 마세요.";
+            case DESIGN -> "사용자 경험 판단과 디자인 의사결정 근거를 확인하세요. 기술 구현을 깊게 묻지 마세요.";
+        };
     }
 
     private String extractText(JsonNode response) {
