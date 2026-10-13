@@ -36,8 +36,11 @@ public class TtsRecoveryService {
     private Mono<Void> recoverState(AudioState state) {
         return redisTemplate.opsForValue().get(SESSION_KEY_PREFIX + state.getSessionId())
                 .ofType(ChatInterviewSession.class)
-                .flatMap(session -> recoverQuestion(session, state))
-                .switchIfEmpty(stateRepository.delete(state.getSessionId(), state.getQuestionId()));
+                .flatMap(session -> recoverQuestion(session, state).thenReturn(true))
+                .defaultIfEmpty(false)
+                .flatMap(recovered -> recovered
+                        ? Mono.empty()
+                        : stateRepository.delete(state.getSessionId(), state.getQuestionId()));
     }
 
     private Mono<Void> recoverQuestion(ChatInterviewSession session, AudioState state) {
