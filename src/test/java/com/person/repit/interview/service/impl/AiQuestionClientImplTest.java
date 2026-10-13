@@ -58,6 +58,33 @@ class AiQuestionClientImplTest {
         assertThat(prompt).contains("spokenText").contains("[발음 문장 작성]");
     }
 
+    @Test
+    void 비기술_면접관은_major가_없어도_프롬프트를_생성한다() {
+        FollowQuestionAiRequest request = FollowQuestionAiRequest.builder()
+                .sessionId("session-id")
+                .interviewId(1L)
+                .userId(2L)
+                .personaId(3L)
+                .personality(InterviewType.FRIENDLY)
+                .tone(InterviewTone.GENTLE)
+                .major(null)
+                .level(InterviewLevel.NORMAL)
+                .role(InterviewRole.HR)
+                .questionId(4L)
+                .questionContent("질문")
+                .expectedAnswer("참고 답안")
+                .answerContent("답변")
+                .responseTime(10)
+                .build();
+
+        String prompt = ReflectionTestUtils.invokeMethod(client(), "createUserPrompt", request);
+
+        assertThat(prompt)
+                .contains("major: 없음")
+                .contains("role: HR")
+                .contains("협업 방식을 확인하세요");
+    }
+
     private AiQuestionClientImpl client() {
         return new AiQuestionClientImpl(
                 new ObjectMapper(),
