@@ -8,6 +8,7 @@ import com.person.repit.interview.type.InterviewLevel;
 import com.person.repit.interview.type.InterviewMajor;
 import com.person.repit.interview.type.InterviewTone;
 import com.person.repit.interview.type.InterviewType;
+import com.person.repit.interview.type.InterviewRole;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -28,6 +29,7 @@ class AiQuestionClientImplTest {
                 .tone(InterviewTone.GENTLE)
                 .major(InterviewMajor.BACKEND)
                 .level(InterviewLevel.NORMAL)
+                .role(InterviewRole.TECH)
                 .questionId(4L)
                 .questionCategory("tech_choice")
                 .questionIntention(null)
@@ -41,7 +43,8 @@ class AiQuestionClientImplTest {
 
         assertThat(prompt)
                 .contains("questionCategory: tech_choice")
-                .contains("questionIntention: 없음");
+                .contains("questionIntention: 없음")
+                .contains("role: TECH");
     }
 
     @Test
@@ -52,12 +55,14 @@ class AiQuestionClientImplTest {
                 .contains("category는 질문 분류 정보로만 참고합니다")
                 .contains("꼬리질문이 확인하려는 것을 '~을 설명할 수 있는지' 형식의 한 문장으로 작성합니다")
                 .contains("카테고리 이름을 쓰지 않습니다");
+        assertThat(prompt).contains("spokenText").contains("[발음 문장 작성]");
     }
 
     private AiQuestionClientImpl client() {
         return new AiQuestionClientImpl(
                 new ObjectMapper(),
                 "model",
+                800,
                 mock(WebClient.class),
                 mock(RepitMetrics.class),
                 mock(AiRequestConcurrencyLimiter.class)
