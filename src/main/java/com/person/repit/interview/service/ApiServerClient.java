@@ -35,7 +35,11 @@ public class ApiServerClient {
         this.metrics = metrics;
 
         log.info("API SERVER URL = {}", baseUrl);
-        log.info("API INTERNAL TOKEN = {}", this.internalToken.isEmpty() ? "설정 안 됨" : "설정됨");
+        if (this.internalToken.isEmpty()) {
+            log.warn("면접 기록을 인증 헤더 없이 보냅니다.");
+        } else {
+            log.info("API INTERNAL TOKEN = 설정됨");
+        }
 
         this.webClient = webClientBuilder
                 .baseUrl(baseUrl)
@@ -79,16 +83,15 @@ public class ApiServerClient {
                 qnaCount
         );
 
-        WebClient.RequestBodySpec requestSpec = webClient.post()
-                .uri("/api/interviews/result")
-                .contentType(MediaType.APPLICATION_JSON);
-
-        if (!internalToken.isEmpty()) {
-            requestSpec.header(INTERNAL_TOKEN_HEADER, internalToken);
-        }
-
         return metrics.recordApiServerRequest(
-                requestSpec
+                webClient.post()
+                        .uri("/api/interviews/result")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .headers(headers -> {
+                            if (!internalToken.isEmpty()) {
+                                headers.set(INTERNAL_TOKEN_HEADER, internalToken);
+                            }
+                        })
                         .bodyValue(request)
                         .retrieve()
                         .toBodilessEntity()
