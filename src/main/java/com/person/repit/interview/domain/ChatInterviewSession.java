@@ -1,17 +1,21 @@
 package com.person.repit.interview.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.person.repit.interview.type.*;
+import com.person.repit.tts.domain.TtsProfile;
 import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Getter
 @Setter
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class ChatInterviewSession {
     private String sessionId;
     private Long interviewId;
@@ -21,6 +25,9 @@ public class ChatInterviewSession {
     private InterviewMajor major;
     private InterviewLevel level;
     private InterviewMode mode;
+    private Map<Long, PersonaSnapshot> personas;
+    private Map<Long, TtsProfile> ttsProfiles;
+    private String ttsProfileVersion;
 
     @Builder.Default
     private InterviewStatus status = InterviewStatus.IN_PROGRESS;
