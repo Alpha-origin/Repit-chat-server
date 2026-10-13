@@ -21,4 +21,16 @@ services:
       API_SERVER_URL: ${API_SERVER_URL}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
       ANTHROPIC_MODEL: ${ANTHROPIC_MODEL}
+      TTS_ENABLED: ${TTS_ENABLED:-false}
+      ELEVENLABS_API_KEY: ${ELEVENLABS_API_KEY:-}
+      TTS_VOICE_ID_1: ${TTS_VOICE_ID_1:-}
+      TTS_VOICE_ID_2: ${TTS_VOICE_ID_2:-}
+      TTS_VOICE_ID_3: ${TTS_VOICE_ID_3:-}
+      TTS_VOICE_ID_4: ${TTS_VOICE_ID_4:-}
+      TTS_VOICE_ID_5: ${TTS_VOICE_ID_5:-}
+      AWS_S3_ACCESS_KEY: ${AWS_S3_ACCESS_KEY:-}
+      AWS_S3_SECRET_KEY: ${AWS_S3_SECRET_KEY:-}
+      AWS_REGION: ${AWS_REGION:-ap-northeast-2}
+      S3_BUCKET: ${S3_BUCKET:-}
+      S3_URL: ${S3_URL:-}
     restart: unless-stopped
