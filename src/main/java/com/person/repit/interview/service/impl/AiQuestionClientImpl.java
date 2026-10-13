@@ -28,18 +28,21 @@ public class AiQuestionClientImpl implements AiQuestionClient {
     private final WebClient webClient;
     private final ObjectMapper objectMapper;
     private final String model;
+    private final int followUpMaxTokens;
     private final RepitMetrics metrics;
     private final AiRequestConcurrencyLimiter concurrencyLimiter;
 
     public AiQuestionClientImpl(
             ObjectMapper objectMapper,
             @Value("${anthropic.model}") String model,
+            @Value("${anthropic.follow-up-max-tokens:800}") int followUpMaxTokens,
             @Qualifier("anthropicWebClient") WebClient webClient,
             RepitMetrics metrics,
             AiRequestConcurrencyLimiter concurrencyLimiter
     ) {
         this.objectMapper = objectMapper;
         this.model = model;
+        this.followUpMaxTokens = followUpMaxTokens;
         this.metrics = metrics;
         this.webClient = webClient;
         this.concurrencyLimiter = concurrencyLimiter;
@@ -103,7 +106,7 @@ public class AiQuestionClientImpl implements AiQuestionClient {
     private Map<String, Object> createRequestBody(FollowQuestionAiRequest request) {
         return Map.of(
                 "model", model,
-                "max_tokens", 500,
+                "max_tokens", followUpMaxTokens,
                 "temperature", 0.3,
                 "system", createSystemPrompt(),
                 "messages", List.of(
