@@ -34,6 +34,10 @@ public class TtsJob implements Comparable<TtsJob> {
         priority = 0;
     }
 
+    public void changePriority(int priority) {
+        this.priority = priority;
+    }
+
     public void cancel() {
         cancelled = true;
     }
