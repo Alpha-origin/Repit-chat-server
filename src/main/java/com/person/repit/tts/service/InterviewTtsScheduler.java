@@ -171,7 +171,8 @@ public class InterviewTtsScheduler {
                 .doBeforeRetry(ignored -> metrics.ttsSynthesisRequest("retry"));
         return metrics.recordTtsSynthesis(
                 ttsClient.synthesize(job.getInput()).retryWhen(retry), "request"
-        );
+        ).doOnSuccess(ignored -> metrics.ttsSynthesisRequest("success"))
+                .doOnError(ignored -> metrics.ttsSynthesisRequest("failed"));
     }
 
     private Mono<StoredAudio> upload(TtsJob job, byte[] bytes) {
