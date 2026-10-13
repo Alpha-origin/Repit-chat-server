@@ -105,6 +105,14 @@ public class InterviewTtsScheduler {
         return jobs.containsKey(new JobKey(sessionId, questionId));
     }
 
+    public synchronized int queuedCount(int priority) {
+        return (int) waiting.stream().filter(job -> job.getPriority() == priority).count();
+    }
+
+    public int runningCount() {
+        return running.size();
+    }
+
     private synchronized void enqueue(JobKey key, TtsJob job) {
         if (closed.containsKey(job.getSessionId()) || jobs.putIfAbsent(key, job) != null) {
             return;
