@@ -70,10 +70,10 @@ public class InterviewTtsScheduler {
                         }));
     }
 
-    public synchronized void promote(String sessionId, Long questionId) {
+    public synchronized void changePriority(String sessionId, Long questionId, int priority) {
         TtsJob job = jobs.get(new JobKey(sessionId, questionId));
         if (job != null && waiting.remove(job)) {
-            job.promote();
+            job.changePriority(priority);
             waiting.add(job);
             drain();
         }
