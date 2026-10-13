@@ -426,9 +426,16 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
         }
         int order = session.getCurrentQuestionIndex();
         return registerTts(session, current, 0, order)
-                .doOnSuccess(ignored -> ttsScheduler.promote(
-                        session.getSessionId(), current.getQuestionId()
-                ));
+                .doOnSuccess(ignored -> {
+                    ttsScheduler.changePriority(session.getSessionId(), current.getQuestionId(), 0);
+                    session.getQuestions().stream()
+                            .skip(order + 1L)
+                            .filter(question -> question.getType() == QuestionType.ORIGINAL)
+                            .findFirst()
+                            .ifPresent(question -> ttsScheduler.changePriority(
+                                    session.getSessionId(), question.getQuestionId(), 1
+                            ));
+                });
     }
 
     private Mono<Void> registerTts(
