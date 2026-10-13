@@ -21,6 +21,7 @@ public class ChatQuestion {
     private String category;
     private String intention;
     private String content;
+    private String spokenText;
     private String expectedAnswer;
     private List<String> basedOn;
     private Long askedByPersonaId;
