@@ -13,6 +13,7 @@ import java.util.function.Supplier;
 @Component
 public class RepitMetrics {
 
+    private final MeterRegistry registry;
     private final AtomicInteger activeWebSocketConnections = new AtomicInteger();
     private final Counter receivedWebSocketMessages;
     private final Counter processedWebSocketMessages;
@@ -26,8 +27,11 @@ public class RepitMetrics {
     private final Timer apiServerRequestTimer;
     private final Timer redisReadTimer;
     private final Timer redisWriteTimer;
+    private final Counter spokenTextDigitsRemain;
+    private final Counter legacyPersonaProfiles;
 
     public RepitMetrics(MeterRegistry registry) {
+        this.registry = registry;
         Gauge.builder("repit.websocket.connections.active", activeWebSocketConnections, AtomicInteger::get)
                 .description("현재 활성 WebSocket 연결 수")
                 .register(registry);
@@ -39,6 +43,8 @@ public class RepitMetrics {
         failedAnswers = counter(registry, "repit.answer.failure", "처리에 실패한 답변 수");
         successfulAnthropicRequests = counter(registry, "repit.anthropic.requests.success", "성공한 Anthropic 요청 수");
         failedAnthropicRequests = counter(registry, "repit.anthropic.requests.failure", "실패한 Anthropic 요청 수");
+        spokenTextDigitsRemain = counter(registry, "tts.spoken_text.digits_remain", "숫자가 남은 발음 문장 수");
+        legacyPersonaProfiles = counter(registry, "tts.persona.legacy", "레거시 TTS 프로필 사용 수");
 
         answerProcessingTimer = timer(registry, "repit.answer.processing.duration", "WebSocket 답변 처리 시간");
         anthropicRequestTimer = timer(registry, "repit.anthropic.request.duration", "Anthropic API 호출 시간");
@@ -139,6 +145,51 @@ public class RepitMetrics {
 
     public <T> Mono<T> recordRedisWrite(Mono<T> operation) {
         return recordReactive(operation, redisWriteTimer);
+    }
+
+    public void spokenTextFallback(String reason) {
+        Counter.builder("tts.spoken_text.fallback")
+                .description("발음 문장 폴백 수")
+                .tag("reason", reason)
+                .register(registry)
+                .increment();
+    }
+
+    public void spokenTextDigitsRemain() {
+        spokenTextDigitsRemain.increment();
+    }
+
+    public void legacyPersonaProfile() {
+        legacyPersonaProfiles.increment();
+    }
+
+    public <T> Mono<T> recordTtsSynthesis(Mono<T> operation, String result) {
+        Timer timer = Timer.builder("tts.synth.duration")
+                .tag("result", result)
+                .register(registry);
+        return recordReactive(operation, timer);
+    }
+
+    public void ttsSynthesisRequest(String result) {
+        Counter.builder("tts.synth.requests")
+                .tag("result", result)
+                .register(registry)
+                .increment();
+    }
+
+    public <T> Mono<T> recordTtsStorage(Mono<T> operation) {
+        return recordReactive(operation, Timer.builder("tts.storage.duration").register(registry));
+    }
+
+    public void ttsStorageFailure() {
+        Counter.builder("tts.storage.failures").register(registry).increment();
+    }
+
+    public <T> Mono<T> recordAudioWait(Mono<T> operation, String result) {
+        Timer timer = Timer.builder("tts.audio.wait.duration")
+                .tag("result", result)
+                .register(registry);
+        return recordReactive(operation, timer);
     }
 
     private Counter counter(MeterRegistry registry, String name, String description) {

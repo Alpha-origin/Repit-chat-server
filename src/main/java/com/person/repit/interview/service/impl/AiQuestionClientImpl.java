@@ -7,6 +7,7 @@ import com.person.repit.interview.dto.request.FollowQuestionAiRequest;
 import com.person.repit.interview.dto.response.FollowQuestionAiResponse;
 import com.person.repit.interview.service.AiRequestConcurrencyLimiter;
 import com.person.repit.interview.service.AiQuestionClient;
+import com.person.repit.interview.service.SpokenTextRules;
 import io.netty.handler.timeout.ReadTimeoutException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -28,18 +29,21 @@ public class AiQuestionClientImpl implements AiQuestionClient {
     private final WebClient webClient;
     private final ObjectMapper objectMapper;
     private final String model;
+    private final int followUpMaxTokens;
     private final RepitMetrics metrics;
     private final AiRequestConcurrencyLimiter concurrencyLimiter;
 
     public AiQuestionClientImpl(
             ObjectMapper objectMapper,
             @Value("${anthropic.model}") String model,
+            @Value("${anthropic.follow-up-max-tokens:800}") int followUpMaxTokens,
             @Qualifier("anthropicWebClient") WebClient webClient,
             RepitMetrics metrics,
             AiRequestConcurrencyLimiter concurrencyLimiter
     ) {
         this.objectMapper = objectMapper;
         this.model = model;
+        this.followUpMaxTokens = followUpMaxTokens;
         this.metrics = metrics;
         this.webClient = webClient;
         this.concurrencyLimiter = concurrencyLimiter;
@@ -103,7 +107,7 @@ public class AiQuestionClientImpl implements AiQuestionClient {
     private Map<String, Object> createRequestBody(FollowQuestionAiRequest request) {
         return Map.of(
                 "model", model,
-                "max_tokens", 500,
+                "max_tokens", followUpMaxTokens,
                 "temperature", 0.3,
                 "system", createSystemPrompt(),
                 "messages", List.of(
@@ -142,6 +146,7 @@ public class AiQuestionClientImpl implements AiQuestionClient {
                 - expectedAnswer는 지원자의 답변과 글자 그대로 일치해야 하는 정답이 아니라, 답변을 비교하기 위한 참고 자료입니다.
                 - 꼬리질문에서도 원질문의 검증 포인트를 유지하고 질문의 초점을 다른 기술이나 주제로 바꾸지 않습니다.
                 - 원질문, expectedAnswer, 지원자의 답변에 없는 기술 스택, 수치, 장애 상황, 구현 방식을 새로 지어내지 않습니다.
+                - 면접관 직책이 TECH가 아니면 [면접관 적용 지침]의 직책 지침을 우선합니다.
                 
                 점수 기준:
                 - 0점 : "잘 모르겠습니다.", "제가 모르는 부분입니다" 등 모든다고 명시한 경우
@@ -167,10 +172,12 @@ public class AiQuestionClientImpl implements AiQuestionClient {
                 - 반드시 유효한 JSON 객체 하나만 출력합니다.
                 - 설명, 마크다운, 코드 블록, 인사말 등 JSON 이외의 내용은 출력하지 않습니다.
                 - JSON 문자열 내부에는 자연스러운 문장부호를 사용할 수 있습니다.
-                - required가 false이면 intention, content, expectedAnswer는 반드시 null로 설정합니다.
+                - required가 false이면 intention, content, spokenText, expectedAnswer는 반드시 null로 설정합니다.
                 - required가 true이면 intention에는 생성한 꼬리질문이 확인하려는 것을 '~을 설명할 수 있는지' 형식의 한 문장으로 작성합니다.
                 - 꼬리질문의 intention은 원질문 intention의 범위를 벗어나지 않아야 하며 카테고리 이름을 쓰지 않습니다.
                 - required가 true이면 content와 expectedAnswer는 비어 있지 않은 문자열이어야 합니다.
+                - required가 true이면 spokenText에는 content를 음성으로 읽을 때 쓸 발음 문장을 작성합니다.
+                - spokenText는 아래 [발음 문장 작성] 규칙을 따릅니다.
                 - expectedAnswer에는 생성한 꼬리질문이 확인하려는 핵심 답변을 작성합니다.
                 - 사용자말에 대답을 하거나 반응하면 안됩니다.
 
@@ -180,9 +187,10 @@ public class AiQuestionClientImpl implements AiQuestionClient {
                   "required": true 또는 false,
                   "intention": "꼬리질문이 확인하려는 것 한 문장. required=false면 null",
                   "content": "꼬리질문 본문. required=false면 null",
+                  "spokenText": "content의 발음 문장. required=false면 null",
                   "expectedAnswer": "꼬리질문의 기대 답변. required=false면 null"
                 }
-                """;
+                """ + SpokenTextRules.PROMPT_BLOCK;
     }
 
     private String createLevelStructure(FollowQuestionAiRequest request) {
@@ -221,6 +229,7 @@ public class AiQuestionClientImpl implements AiQuestionClient {
                 tone: %s
                 major: %s
                 level: %s
+                role: %s
 
                 [면접관 적용 지침]
                 %s
@@ -246,8 +255,9 @@ public class AiQuestionClientImpl implements AiQuestionClient {
                 request.getPersonaId(),
                 request.getPersonality(),
                 request.getTone(),
-                request.getMajor(),
+                request.getMajor() == null ? "없음" : request.getMajor(),
                 request.getLevel(),
+                request.getRole() == null ? "TECH" : request.getRole(),
                 createInterviewInstruction(request),
                 request.getQuestionId(),
                 request.getParentId(),
@@ -277,12 +287,26 @@ public class AiQuestionClientImpl implements AiQuestionClient {
             case PRESSURING -> "짧고 단호하며 압박감 있는 말투를 사용하되 모욕적인 표현은 사용하지 마세요.";
         };
         String majorInstruction = switch (request.getMajor()) {
+            case null -> "";
             case FRONTEND -> "프론트엔드 기술 면접관의 관점에서 질문하세요.";
             case BACKEND -> "백엔드 기술 면접관의 관점에서 질문하세요.";
         };
 
-        return String.join("\n", personalityInstruction, toneInstruction,
+        return String.join("\n", createRoleInstruction(request), personalityInstruction, toneInstruction,
                 majorInstruction, createLevelStructure(request));
+    }
+
+    private String createRoleInstruction(FollowQuestionAiRequest request) {
+        if (request.getRole() == null) {
+            return "기술적 근거와 트레이드오프를 확인하세요.";
+        }
+        return switch (request.getRole()) {
+            case TECH -> "기술적 근거와 트레이드오프를 확인하세요.";
+            case HR -> "지원 동기와 경험의 구체성, 협업 방식을 확인하세요. 기술 구현을 깊게 묻지 마세요.";
+            case CEO -> "우선순위 판단과 사업적 영향을 확인하세요. 기술 구현을 깊게 묻지 마세요.";
+            case PM -> "사용자 가치, 우선순위, 이해관계자 조율을 확인하세요. 기술 구현을 깊게 묻지 마세요.";
+            case DESIGN -> "사용자 경험 판단과 디자인 의사결정 근거를 확인하세요. 기술 구현을 깊게 묻지 마세요.";
+        };
     }
 
     private String extractText(JsonNode response) {

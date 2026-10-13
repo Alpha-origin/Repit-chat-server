@@ -30,6 +30,11 @@ dependencies {
     // redis
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
 
+    // aws
+    implementation platform('software.amazon.awssdk:bom:2.30.38')
+    implementation 'software.amazon.awssdk:s3'
+    implementation 'software.amazon.awssdk:netty-nio-client'
+
     // swagger
     implementation 'org.springdoc:springdoc-openapi-starter-webflux-ui:3.1.0'
 
@@ -39,6 +44,7 @@ dependencies {
 
     // test
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'io.projectreactor:reactor-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 

@@ -1,16 +1,13 @@
 package com.person.repit.interview.dto.request;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.person.repit.interview.type.InterviewLevel;
-import com.person.repit.interview.type.InterviewMajor;
-import com.person.repit.interview.type.InterviewMode;
-import com.person.repit.interview.type.InterviewType;
-import com.person.repit.interview.type.InterviewStatus;
-import com.person.repit.interview.type.InterviewTone;
+import com.person.repit.interview.type.*;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -51,6 +48,9 @@ public class ChatInterviewPrepareRequest {
     private InterviewLevel level;
 
     @Valid
+    private List<Persona> personas;
+
+    @Valid
     @NotEmpty
     private List<Question> questions;
 
@@ -70,11 +70,47 @@ public class ChatInterviewPrepareRequest {
 
         private String intention;
 
+        private String spokenText;
+
         private String expectedAnswer;
 
         private List<String> basedOn;
 
         @NotNull
         private Long personaId;
+    }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class Persona {
+
+        @NotNull
+        private Long personaId;
+
+        private String personaName;
+
+        @NotNull
+        private InterviewRole role;
+
+        private InterviewMajor major;
+
+        @NotNull
+        private InterviewType type;
+
+        @NotNull
+        private InterviewTone tone;
+
+        @NotNull
+        private InterviewLevel level;
+
+        private Integer career;
+
+        private InterviewGender gender;
+
+        @Min(1)
+        @Max(5)
+        private Integer voiceIndex;
     }
 }

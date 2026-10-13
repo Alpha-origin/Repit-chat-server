@@ -5,6 +5,7 @@ import com.person.repit.interview.type.InterviewLevel;
 import com.person.repit.interview.type.InterviewMajor;
 import com.person.repit.interview.type.InterviewTone;
 import com.person.repit.interview.type.InterviewType;
+import com.person.repit.interview.type.InterviewRole;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -28,6 +29,7 @@ class FollowQuestionAiRequestTest {
                 InterviewTone.GENTLE,
                 InterviewMajor.BACKEND,
                 InterviewLevel.NORMAL,
+                InterviewRole.TECH,
                 question,
                 "답변",
                 10
@@ -36,6 +38,7 @@ class FollowQuestionAiRequestTest {
         assertThat(request.getQuestionCategory()).isEqualTo("tech_choice");
         assertThat(request.getQuestionIntention())
                 .isEqualTo("분산락을 선택한 이유를 설명할 수 있는지");
+        assertThat(request.getRole()).isEqualTo(InterviewRole.TECH);
     }
 
     @Test
@@ -54,6 +57,7 @@ class FollowQuestionAiRequestTest {
                 InterviewTone.GENTLE,
                 InterviewMajor.BACKEND,
                 InterviewLevel.NORMAL,
+                InterviewRole.TECH,
                 question,
                 "답변",
                 10
