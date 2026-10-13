@@ -1,9 +1,11 @@
 package com.person.repit.interview.service.impl;
 
 import com.person.repit.common.metrics.RepitMetrics;
+import com.person.repit.common.exception.InvalidRequestException;
 import com.person.repit.interview.domain.ChatAnswer;
 import com.person.repit.interview.domain.ChatInterviewSession;
 import com.person.repit.interview.domain.ChatQuestion;
+import com.person.repit.interview.domain.PersonaSnapshot;
 import com.person.repit.interview.dto.request.ChatAnswerRequest;
 import com.person.repit.interview.dto.request.ChatInterviewAllRequest;
 import com.person.repit.interview.dto.request.ChatInterviewPrepareRequest;
@@ -21,7 +23,10 @@ import com.person.repit.interview.service.AiQuestionClient;
 import com.person.repit.interview.service.ApiServerClient;
 import com.person.repit.interview.service.ChatInterviewService;
 import com.person.repit.interview.type.InterviewStatus;
+import com.person.repit.interview.type.InterviewRole;
 import com.person.repit.interview.type.QuestionType;
+import com.person.repit.tts.domain.TtsProfile;
+import com.person.repit.tts.service.PersonaTtsProfileResolver;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.ReactiveRedisTemplate;
@@ -32,6 +37,9 @@ import reactor.core.publisher.Mono;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -46,10 +54,12 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
     private final ReactiveRedisTemplate<String, Object> redisTemplate;
     private final ApiServerClient apiServerClient;
     private final RepitMetrics metrics;
+    private final PersonaTtsProfileResolver profileResolver;
 
     @Override
     public Mono<ChatInterviewResponse> prepareInterview(ChatInterviewPrepareRequest request) {
         return Mono.defer(() -> {
+            validatePersonas(request);
             log.debug("sessionId={}, interviewId={}", request.getSessionId(), request.getInterviewId());
             String key = createKey(request.getSessionId());
 
@@ -73,6 +83,8 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
                             .build())
                     .toList();
 
+            Map<Long, PersonaSnapshot> personas = createPersonaSnapshots(request);
+            Map<Long, TtsProfile> profiles = createTtsProfiles(request, personas);
             ChatInterviewSession session = ChatInterviewSession.builder()
                     .sessionId(request.getSessionId())
                     .interviewId(request.getInterviewId())
@@ -82,6 +94,9 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
                     .tone(request.getTone())
                     .major(request.getMajor())
                     .level(request.getLevel())
+                    .personas(personas)
+                    .ttsProfiles(profiles)
+                    .ttsProfileVersion(profiles == null ? null : "persona-tts-v1")
                     .status(request.getStatus())
                     .questions(new ArrayList<>(questions))
                     .answers(new ArrayList<>())
@@ -170,15 +185,18 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
             return Mono.just(FollowQuestionAiResponse.notRequired());
         }
 
+        PersonaSnapshot persona = session.getPersonas() == null
+                ? null : session.getPersonas().get(currentQuestion.getAskedByPersonaId());
         FollowQuestionAiRequest aiRequest = FollowQuestionAiRequest.of(
                 session.getSessionId(),
                 session.getInterviewId(),
                 session.getUserId(),
                 currentQuestion.getAskedByPersonaId(),
-                session.getPersonality(),
-                session.getTone(),
-                session.getMajor(),
-                session.getLevel(),
+                persona == null ? session.getPersonality() : persona.getType(),
+                persona == null ? session.getTone() : persona.getTone(),
+                persona == null ? session.getMajor() : persona.getMajor(),
+                persona == null ? session.getLevel() : persona.getLevel(),
+                persona == null ? InterviewRole.TECH : persona.getRole(),
                 currentQuestion,
                 request.getContent(),
                 request.getResponseTime()
@@ -327,5 +345,60 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
             }
         }
         return null;
+    }
+
+    private void validatePersonas(ChatInterviewPrepareRequest request) {
+        if (request.getPersonas() == null) {
+            return;
+        }
+        var ids = new HashSet<Long>();
+        for (ChatInterviewPrepareRequest.Persona persona : request.getPersonas()) {
+            if (!ids.add(persona.getPersonaId())) {
+                throw new InvalidRequestException("면접관 ID가 중복되었습니다.");
+            }
+            if (persona.getRole() == InterviewRole.TECH && persona.getMajor() == null) {
+                throw new InvalidRequestException("기술 면접관의 전공이 필요합니다.");
+            }
+        }
+        boolean missingPersona = request.getQuestions().stream()
+                .anyMatch(question -> !ids.contains(question.getPersonaId()));
+        if (missingPersona) {
+            throw new InvalidRequestException("질문의 면접관 정보를 찾을 수 없습니다.");
+        }
+    }
+
+    private Map<Long, PersonaSnapshot> createPersonaSnapshots(ChatInterviewPrepareRequest request) {
+        if (request.getPersonas() == null) {
+            return null;
+        }
+        Map<Long, PersonaSnapshot> result = new HashMap<>();
+        request.getPersonas().forEach(persona -> result.put(persona.getPersonaId(),
+                PersonaSnapshot.builder()
+                        .personaId(persona.getPersonaId())
+                        .name(persona.getPersonaName())
+                        .role(persona.getRole())
+                        .major(persona.getMajor())
+                        .type(persona.getType())
+                        .tone(persona.getTone())
+                        .level(persona.getLevel())
+                        .career(persona.getCareer())
+                        .gender(persona.getGender())
+                        .voiceIndex(persona.getVoiceIndex())
+                        .build()));
+        return result;
+    }
+
+    private Map<Long, TtsProfile> createTtsProfiles(
+            ChatInterviewPrepareRequest request,
+            Map<Long, PersonaSnapshot> personas
+    ) {
+        if (personas == null) {
+            return null;
+        }
+        Map<Long, TtsProfile> result = new HashMap<>();
+        personas.forEach((id, persona) -> result.put(
+                id, profileResolver.resolve(request.getMode(), persona)
+        ));
+        return result;
     }
 }
