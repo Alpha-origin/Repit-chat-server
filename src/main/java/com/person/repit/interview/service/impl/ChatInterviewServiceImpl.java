@@ -27,12 +27,14 @@ import com.person.repit.interview.type.InterviewRole;
 import com.person.repit.interview.type.QuestionType;
 import com.person.repit.tts.domain.TtsProfile;
 import com.person.repit.tts.service.PersonaTtsProfileResolver;
+import com.person.repit.tts.service.InterviewTtsScheduler;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.ReactiveRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Mono;
+import reactor.core.publisher.Flux;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -55,6 +57,7 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
     private final ApiServerClient apiServerClient;
     private final RepitMetrics metrics;
     private final PersonaTtsProfileResolver profileResolver;
+    private final InterviewTtsScheduler ttsScheduler;
 
     @Override
     public Mono<ChatInterviewResponse> prepareInterview(ChatInterviewPrepareRequest request) {
@@ -108,7 +111,8 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
                             redisTemplate.opsForValue().setIfAbsent(key, session, SESSION_TTL)
                     )
                     .flatMap(created -> Boolean.TRUE.equals(created)
-                            ? Mono.just(ChatInterviewResponse.from(session))
+                            ? registerOriginalQuestions(session)
+                                    .thenReturn(ChatInterviewResponse.from(session))
                             : getSession(request.getSessionId()).map(ChatInterviewResponse::from));
         });
     }
@@ -255,7 +259,9 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
             return finishInterview(session, InterviewStatus.COMPLETED, ChatProgressResponse.end());
         }
 
-        return saveSession(session).thenReturn(ChatProgressResponse.next(nextQuestion));
+        return saveSession(session)
+                .then(registerCurrentQuestion(session))
+                .thenReturn(ChatProgressResponse.next(nextQuestion));
     }
 
     private Mono<ChatProgressResponse> finishInterview(
@@ -265,6 +271,7 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
     ) {
         session.setStatus(status);
         return apiServerClient.saveInterviewResult(ChatInterviewAllRequest.from(session))
+                .then(Mono.fromRunnable(() -> ttsScheduler.cancelSession(session.getSessionId())))
                 .then(deleteSession(session.getSessionId()))
                 .thenReturn(response);
     }
@@ -400,5 +407,59 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
                 id, profileResolver.resolve(request.getMode(), persona)
         ));
         return result;
+    }
+
+    private Mono<Void> registerOriginalQuestions(ChatInterviewSession session) {
+        return Flux.range(0, session.getQuestions().size())
+                .flatMap(index -> {
+                    ChatQuestion question = session.getQuestions().get(index);
+                    int priority = index == 0 ? 0 : index == 1 ? 1 : 2;
+                    return registerTts(session, question, priority, index);
+                })
+                .then();
+    }
+
+    private Mono<Void> registerCurrentQuestion(ChatInterviewSession session) {
+        ChatQuestion current = session.getCurrentQuestion();
+        if (current == null) {
+            return Mono.empty();
+        }
+        int order = session.getCurrentQuestionIndex();
+        return registerTts(session, current, 0, order)
+                .doOnSuccess(ignored -> ttsScheduler.promote(
+                        session.getSessionId(), current.getQuestionId()
+                ));
+    }
+
+    private Mono<Void> registerTts(
+            ChatInterviewSession session,
+            ChatQuestion question,
+            int priority,
+            int order
+    ) {
+        TtsProfile profile = profileFor(session, question.getAskedByPersonaId());
+        return ttsScheduler.register(session.getSessionId(), question, profile, priority, order)
+                .then()
+                .onErrorResume(error -> {
+                    log.warn("TTS 등록 실패 sessionId={}, questionId={}",
+                            session.getSessionId(), question.getQuestionId(), error);
+                    return Mono.empty();
+                });
+    }
+
+    private TtsProfile profileFor(ChatInterviewSession session, Long personaId) {
+        if (session.getTtsProfiles() != null && session.getTtsProfiles().get(personaId) != null) {
+            return session.getTtsProfiles().get(personaId);
+        }
+        metrics.legacyPersonaProfile();
+        PersonaSnapshot legacy = PersonaSnapshot.builder()
+                .personaId(personaId)
+                .role(InterviewRole.TECH)
+                .major(session.getMajor())
+                .type(session.getPersonality())
+                .tone(session.getTone())
+                .level(session.getLevel())
+                .build();
+        return profileResolver.resolve(session.getMode(), legacy);
     }
 }
