@@ -7,6 +7,7 @@ import com.person.repit.interview.dto.request.FollowQuestionAiRequest;
 import com.person.repit.interview.dto.response.FollowQuestionAiResponse;
 import com.person.repit.interview.service.AiRequestConcurrencyLimiter;
 import com.person.repit.interview.service.AiQuestionClient;
+import com.person.repit.interview.service.SpokenTextRules;
 import io.netty.handler.timeout.ReadTimeoutException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -170,10 +171,12 @@ public class AiQuestionClientImpl implements AiQuestionClient {
                 - 반드시 유효한 JSON 객체 하나만 출력합니다.
                 - 설명, 마크다운, 코드 블록, 인사말 등 JSON 이외의 내용은 출력하지 않습니다.
                 - JSON 문자열 내부에는 자연스러운 문장부호를 사용할 수 있습니다.
-                - required가 false이면 intention, content, expectedAnswer는 반드시 null로 설정합니다.
+                - required가 false이면 intention, content, spokenText, expectedAnswer는 반드시 null로 설정합니다.
                 - required가 true이면 intention에는 생성한 꼬리질문이 확인하려는 것을 '~을 설명할 수 있는지' 형식의 한 문장으로 작성합니다.
                 - 꼬리질문의 intention은 원질문 intention의 범위를 벗어나지 않아야 하며 카테고리 이름을 쓰지 않습니다.
                 - required가 true이면 content와 expectedAnswer는 비어 있지 않은 문자열이어야 합니다.
+                - required가 true이면 spokenText에는 content를 음성으로 읽을 때 쓸 발음 문장을 작성합니다.
+                - spokenText는 아래 [발음 문장 작성] 규칙을 따릅니다.
                 - expectedAnswer에는 생성한 꼬리질문이 확인하려는 핵심 답변을 작성합니다.
                 - 사용자말에 대답을 하거나 반응하면 안됩니다.
 
@@ -183,9 +186,10 @@ public class AiQuestionClientImpl implements AiQuestionClient {
                   "required": true 또는 false,
                   "intention": "꼬리질문이 확인하려는 것 한 문장. required=false면 null",
                   "content": "꼬리질문 본문. required=false면 null",
+                  "spokenText": "content의 발음 문장. required=false면 null",
                   "expectedAnswer": "꼬리질문의 기대 답변. required=false면 null"
                 }
-                """;
+                """ + SpokenTextRules.PROMPT_BLOCK;
     }
 
     private String createLevelStructure(FollowQuestionAiRequest request) {
