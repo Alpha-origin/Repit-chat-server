@@ -15,6 +15,10 @@ import com.person.repit.interview.type.InterviewStatus;
 import com.person.repit.interview.type.InterviewTone;
 import com.person.repit.interview.type.InterviewType;
 import com.person.repit.interview.type.QuestionType;
+import com.person.repit.tts.domain.AudioState;
+import com.person.repit.tts.domain.AudioStatus;
+import com.person.repit.tts.service.InterviewTtsScheduler;
+import com.person.repit.tts.service.PersonaTtsProfileResolver;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -30,6 +34,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -42,6 +47,7 @@ class ChatInterviewServiceImplTest {
     private ReactiveRedisTemplate<String, Object> redisTemplate;
     private ReactiveValueOperations<String, Object> valueOperations;
     private ChatInterviewServiceImpl service;
+    private InterviewTtsScheduler ttsScheduler;
 
     @BeforeEach
     void setUp() {
@@ -49,12 +55,21 @@ class ChatInterviewServiceImplTest {
         redisTemplate = mock(ReactiveRedisTemplate.class);
         valueOperations = mock(ReactiveValueOperations.class);
         when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+        ttsScheduler = mock(InterviewTtsScheduler.class);
+        when(ttsScheduler.register(anyString(), any(), any(), anyInt(), anyInt()))
+                .thenAnswer(invocation -> Mono.just(AudioState.builder()
+                        .sessionId(invocation.getArgument(0))
+                        .questionId(((ChatQuestion) invocation.getArgument(1)).getQuestionId())
+                        .status(AudioStatus.QUEUED)
+                        .build()));
 
         service = new ChatInterviewServiceImpl(
                 aiQuestionClient,
                 redisTemplate,
                 mock(ApiServerClient.class),
-                new RepitMetrics(new SimpleMeterRegistry())
+                new RepitMetrics(new SimpleMeterRegistry()),
+                mock(PersonaTtsProfileResolver.class),
+                ttsScheduler
         );
     }
 
