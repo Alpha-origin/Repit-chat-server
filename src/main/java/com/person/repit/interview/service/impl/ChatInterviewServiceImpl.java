@@ -99,7 +99,9 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
                     .level(request.getLevel())
                     .personas(personas)
                     .ttsProfiles(profiles)
-                    .ttsProfileVersion(profiles == null ? null : "persona-tts-v1")
+                    .ttsProfileVersion(profiles == null || profiles.isEmpty()
+                            ? null
+                            : profiles.values().iterator().next().getProfileVersion())
                     .status(request.getStatus())
                     .questions(new ArrayList<>(questions))
                     .answers(new ArrayList<>())
