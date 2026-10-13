@@ -92,10 +92,13 @@ class ChatInterviewServiceImplTest {
 
         ChatInterviewSession session = (ChatInterviewSession) sessionCaptor.getValue();
         assertThat(session.getQuestions())
-                .extracting(ChatQuestion::getCategory, ChatQuestion::getIntention)
+                .extracting(ChatQuestion::getCategory, ChatQuestion::getIntention,
+                        ChatQuestion::getSpokenText)
                 .containsExactly(
-                        org.assertj.core.groups.Tuple.tuple("tech_choice", "선택 근거를 설명할 수 있는지"),
-                        org.assertj.core.groups.Tuple.tuple("problem_solving", null)
+                        org.assertj.core.groups.Tuple.tuple(
+                                "tech_choice", "선택 근거를 설명할 수 있는지", "발음 질문"
+                        ),
+                        org.assertj.core.groups.Tuple.tuple("problem_solving", null, "발음 질문")
                 );
     }
 
@@ -155,6 +158,7 @@ class ChatInterviewServiceImplTest {
         question.setId(id);
         question.setCategory(category);
         question.setQuestion("질문");
+        question.setSpokenText("발음 질문");
         question.setIntention(intention);
         question.setPersonaId(3L);
         return question;
