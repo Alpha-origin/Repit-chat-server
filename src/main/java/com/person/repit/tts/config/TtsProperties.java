@@ -1,6 +1,5 @@
 package com.person.repit.tts.config;
 
-import com.person.repit.interview.type.InterviewMode;
 import com.person.repit.interview.type.InterviewTone;
 import com.person.repit.interview.type.InterviewType;
 import lombok.Getter;
@@ -27,7 +26,6 @@ public class TtsProperties {
     private Map<Integer, String> voices = new HashMap<>();
     private Defaults defaults = new Defaults();
     private Presets presets = new Presets();
-    private Clamp clamp = new Clamp();
     private Pause pause = new Pause();
     private Queue queue = new Queue();
     private Retry retry = new Retry();
@@ -63,19 +61,15 @@ public class TtsProperties {
     @Getter
     @Setter
     public static class Defaults {
-        private double stability = 0.55;
         private double similarityBoost = 0.8;
-        private double style = 0.1;
-        private double speed = 1.1;
         private boolean useSpeakerBoost = true;
     }
 
     @Getter
     @Setter
     public static class Presets {
-        private Map<InterviewMode, Map<InterviewTone, Preset>> base = new EnumMap<>(InterviewMode.class);
-        private Map<InterviewTone, Preset> toneAdjust = new EnumMap<>(InterviewTone.class);
-        private Map<InterviewType, Preset> typeAdjust = new EnumMap<>(InterviewType.class);
+        private Map<InterviewTone, Map<InterviewType, Preset>> cells =
+                new EnumMap<>(InterviewTone.class);
     }
 
     @Getter
@@ -84,13 +78,6 @@ public class TtsProperties {
         private double stability;
         private double style;
         private double speed;
-    }
-
-    @Getter
-    @Setter
-    public static class Clamp {
-        private double speedMin = 0.8;
-        private double speedMax = 1.2;
     }
 
     @Getter
