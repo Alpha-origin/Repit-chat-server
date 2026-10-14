@@ -20,7 +20,6 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import reactor.core.publisher.Mono;
 
 import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -51,18 +50,6 @@ class ApiServerClientTest {
         client.saveInterviewResult(resultRequest()).block();
 
         assertThat(capturedRequest.get().headers().getFirst(INTERNAL_TOKEN_HEADER)).isNull();
-    }
-
-    @Test
-    void 모의면접_조회에는_내부_토큰을_추가하지_않는다() {
-        AtomicReference<ClientRequest> capturedRequest = new AtomicReference<>();
-        ApiServerClient client = client("internal-token", capturedRequest);
-
-        client.getMockInterview(UUID.randomUUID(), "Bearer user-token").block();
-
-        assertThat(capturedRequest.get().headers().getFirst(INTERNAL_TOKEN_HEADER)).isNull();
-        assertThat(capturedRequest.get().headers().getFirst(HttpHeaders.AUTHORIZATION))
-                .isEqualTo("Bearer user-token");
     }
 
     @ParameterizedTest

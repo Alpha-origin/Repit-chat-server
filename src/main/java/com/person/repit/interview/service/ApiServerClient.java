@@ -2,7 +2,6 @@ package com.person.repit.interview.service;
 
 import com.person.repit.common.metrics.RepitMetrics;
 import com.person.repit.interview.dto.request.ChatInterviewAllRequest;
-import com.person.repit.interview.dto.response.MockInterviewResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
@@ -11,7 +10,6 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
 
-import java.util.UUID;
 
 @Slf4j
 @Component
@@ -44,27 +42,6 @@ public class ApiServerClient {
         this.webClient = webClientBuilder
                 .baseUrl(baseUrl)
                 .build();
-    }
-
-    public Mono<MockInterviewResponse> getMockInterview(
-            UUID jobId,
-            String authorization
-    ) {
-        log.info("AI REQUEST jobId={}", jobId);
-
-        log.info(
-                "REQUEST URL = {}/api/v1/ai?jobId={}",
-                baseUrl,
-                jobId
-        );
-
-        return metrics.recordApiServerRequest(
-                webClient.get()
-                        .uri("/api/v1/ai?jobId={jobId}", jobId)
-                        .header("Authorization", authorization)
-                        .retrieve()
-                        .bodyToMono(MockInterviewResponse.class)
-        );
     }
 
     public Mono<Void> saveInterviewResult(
