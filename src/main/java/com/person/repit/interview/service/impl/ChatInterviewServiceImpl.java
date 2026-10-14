@@ -406,7 +406,7 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
         }
         Map<Long, TtsProfile> result = new HashMap<>();
         personas.forEach((id, persona) -> result.put(
-                id, profileResolver.resolve(request.getMode(), persona)
+                id, profileResolver.resolve(persona)
         ));
         return result;
     }
