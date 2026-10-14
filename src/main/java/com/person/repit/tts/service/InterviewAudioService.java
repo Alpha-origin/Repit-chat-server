@@ -108,7 +108,7 @@ public class InterviewAudioService {
                 .tone(session.getTone())
                 .level(session.getLevel())
                 .build();
-        return profileResolver.resolve(session.getMode(), legacy);
+        return profileResolver.resolve(legacy);
     }
 
     private ChatQuestion findQuestion(ChatInterviewSession session, Long questionId) {

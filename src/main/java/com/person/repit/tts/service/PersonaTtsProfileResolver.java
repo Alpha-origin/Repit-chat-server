@@ -1,7 +1,6 @@
 package com.person.repit.tts.service;
 
 import com.person.repit.interview.domain.PersonaSnapshot;
-import com.person.repit.interview.type.InterviewMode;
 import com.person.repit.tts.config.TtsProperties;
 import com.person.repit.tts.domain.TtsProfile;
 import lombok.RequiredArgsConstructor;
@@ -13,12 +12,12 @@ public class PersonaTtsProfileResolver {
     private final TtsProperties properties;
     private final TtsPresetRegistry presetRegistry;
 
-    public TtsProfile resolve(InterviewMode mode, PersonaSnapshot persona) {
+    public TtsProfile resolve(PersonaSnapshot persona) {
         int voiceIndex = persona.getVoiceIndex() == null
                 ? properties.getDefaultVoiceIndex()
                 : persona.getVoiceIndex();
         TtsPresetRegistry.ResolvedPreset preset = presetRegistry.resolve(
-                mode, persona.getTone(), persona.getType()
+                persona.getTone(), persona.getType()
         );
 
         return TtsProfile.builder()

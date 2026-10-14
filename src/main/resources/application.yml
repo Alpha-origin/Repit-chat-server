@@ -62,32 +62,22 @@ tts:
     4: ${TTS_VOICE_ID_4:}
     5: ${TTS_VOICE_ID_5:}
   defaults:
-    stability: 0.55
     similarity-boost: 0.8
-    style: 0.1
-    speed: 1.1
     use-speaker-boost: true
   presets:
-    base:
-      SOLO:
-        GENTLE: { stability: 0.74, style: 0.04, speed: 1.02 }
-        DIRECT: { stability: 0.55, style: 0.18, speed: 1.10 }
-        PRESSURING: { stability: 0.05, style: 1.00, speed: 1.17 }
-      MULTI:
-        GENTLE: { stability: 0.72, style: 0.04, speed: 1.02 }
-        DIRECT: { stability: 0.42, style: 0.38, speed: 1.13 }
-        PRESSURING: { stability: 0.20, style: 0.82, speed: 1.17 }
-    tone-adjust:
-      GENTLE: { stability: 0.04, style: -0.03, speed: -0.02 }
-      DIRECT: { stability: -0.04, style: 0.08, speed: 0.02 }
-      PRESSURING: { stability: -0.08, style: 0.12, speed: 0.03 }
-    type-adjust:
-      FRIENDLY: { stability: 0.0, style: -0.04, speed: -0.02 }
-      REALISTIC: { stability: 0.0, style: 0.04, speed: 0.0 }
-      METICULOUS: { stability: 0.04, style: 0.02, speed: -0.01 }
-  clamp:
-    speed-min: 0.8
-    speed-max: 1.2
+    cells:
+      GENTLE:
+        FRIENDLY: { stability: 0.78, style: 0.00, speed: 0.98 }
+        REALISTIC: { stability: 0.76, style: 0.05, speed: 1.00 }
+        METICULOUS: { stability: 0.80, style: 0.03, speed: 0.99 }
+      DIRECT:
+        FRIENDLY: { stability: 0.38, style: 0.42, speed: 1.13 }
+        REALISTIC: { stability: 0.51, style: 0.30, speed: 1.12 }
+        METICULOUS: { stability: 0.42, style: 0.48, speed: 1.14 }
+      PRESSURING:
+        FRIENDLY: { stability: 0.12, style: 0.90, speed: 1.18 }
+        REALISTIC: { stability: 0.12, style: 0.98, speed: 1.20 }
+        METICULOUS: { stability: 0.01, style: 1.00, speed: 1.19 }
   pause:
     enabled: false
     max-per-question: 2

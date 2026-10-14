@@ -406,7 +406,7 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
         }
         Map<Long, TtsProfile> result = new HashMap<>();
         personas.forEach((id, persona) -> result.put(
-                id, profileResolver.resolve(request.getMode(), persona)
+                id, profileResolver.resolve(persona)
         ));
         return result;
     }
@@ -469,6 +469,6 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
                 .tone(session.getTone())
                 .level(session.getLevel())
                 .build();
-        return profileResolver.resolve(session.getMode(), legacy);
+        return profileResolver.resolve(legacy);
     }
 }
