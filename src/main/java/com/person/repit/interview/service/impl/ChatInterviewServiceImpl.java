@@ -469,6 +469,6 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
                 .tone(session.getTone())
                 .level(session.getLevel())
                 .build();
-        return profileResolver.resolve(session.getMode(), legacy);
+        return profileResolver.resolve(legacy);
     }
 }
