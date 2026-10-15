@@ -30,6 +30,7 @@ class FollowQuestionAiRequestTest {
                 InterviewMajor.BACKEND,
                 InterviewLevel.NORMAL,
                 InterviewRole.TECH,
+                null,
                 question,
                 "답변",
                 10
@@ -58,6 +59,7 @@ class FollowQuestionAiRequestTest {
                 InterviewMajor.BACKEND,
                 InterviewLevel.NORMAL,
                 InterviewRole.TECH,
+                null,
                 question,
                 "답변",
                 10
