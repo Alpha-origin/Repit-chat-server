@@ -21,6 +21,9 @@ logging:
     reactor.netty.http.client.HttpClientConnect: ERROR
 
 repit:
+  interview-result:
+    retry-enabled: ${INTERVIEW_RESULT_RETRY_ENABLED:false}
+    poll-interval: 5000
   api-server:
     base-url: https://wildcat-startle-rope.ngrok-free.dev
     internal-token: ${INTERNAL_AUTH_TOKEN:}

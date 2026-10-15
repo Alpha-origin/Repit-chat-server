@@ -4,6 +4,9 @@ services:
     container_name: repit-redis
     ports:
       - "6379:6379"
+    command: ["redis-server", "--appendonly", "yes", "--appendfsync", "always", "--maxmemory-policy", "noeviction"]
+    volumes:
+      - redis-data:/data
     restart: unless-stopped
 
   chat:
@@ -19,6 +22,8 @@ services:
       REDIS_HOST: ${REDIS_HOST}
       REDIS_PORT: ${REDIS_PORT}
       API_SERVER_URL: ${API_SERVER_URL}
+      INTERNAL_AUTH_TOKEN: ${INTERNAL_AUTH_TOKEN:-}
+      INTERVIEW_RESULT_RETRY_ENABLED: ${INTERVIEW_RESULT_RETRY_ENABLED:-false}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
       ANTHROPIC_MODEL: ${ANTHROPIC_MODEL}
       TTS_ENABLED: ${TTS_ENABLED:-false}
@@ -34,3 +39,6 @@ services:
       S3_BUCKET: ${S3_BUCKET:-}
       S3_URL: ${S3_URL:-}
     restart: unless-stopped
+
+volumes:
+  redis-data:

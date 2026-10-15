@@ -10,6 +10,8 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
 
+import java.time.Duration;
+
 
 @Slf4j
 @Component
@@ -47,19 +49,14 @@ public class ApiServerClient {
     public Mono<Void> saveInterviewResult(
             ChatInterviewAllRequest request
     ) {
-        int qnaCount = request.getQnaRequests() == null
-                ? 0
-                : request.getQnaRequests().size();
+        return sendResult(request);
+    }
 
-        log.info(
-                "[면접 결과 저장 요청] URL={}/api/interviews/result, sessionId={}, interviewId={}, 상태={}, 문답 수={}",
-                baseUrl,
-                request.getSessionId(),
-                request.getInterviewId(),
-                request.getStatus(),
-                qnaCount
-        );
+    public Mono<Void> saveInterviewPayload(String payload) {
+        return sendResult(payload);
+    }
 
+    private Mono<Void> sendResult(Object payload) {
         return metrics.recordApiServerRequest(
                 webClient.post()
                         .uri("/api/interviews/result")
@@ -69,36 +66,18 @@ public class ApiServerClient {
                                 headers.set(INTERNAL_TOKEN_HEADER, internalToken);
                             }
                         })
-                        .bodyValue(request)
+                        .bodyValue(payload)
                         .retrieve()
+                        .onStatus(status -> !status.is2xxSuccessful(), response -> response.createException())
                         .toBodilessEntity()
-                        .doOnNext(response -> log.info(
-                                "[면접 결과 저장 성공] sessionId={}, interviewId={}, HTTP 상태={}",
-                                request.getSessionId(),
-                                request.getInterviewId(),
-                                response.getStatusCode().value()
-                        ))
-                        .doOnError(
-                                WebClientResponseException.class,
-                                exception -> log.error(
-                                        "[면접 결과 저장 실패] sessionId={}, interviewId={}, HTTP 상태={}, 응답={}",
-                                        request.getSessionId(),
-                                        request.getInterviewId(),
-                                        exception.getStatusCode().value(),
-                                        exception.getResponseBodyAsString(),
-                                        exception
-                                )
-                        )
-                        .doOnError(
-                                exception -> !(exception instanceof WebClientResponseException),
-                                exception -> log.error(
-                                        "[면접 결과 저장 실패] sessionId={}, interviewId={}, API 서버 통신 오류={}",
-                                        request.getSessionId(),
-                                        request.getInterviewId(),
-                                        exception.getMessage(),
-                                        exception
-                                )
-                        )
+                        .timeout(Duration.ofSeconds(10))
+                        .doOnError(error -> {
+                            if (error instanceof WebClientResponseException response) {
+                                log.warn("[면접 결과 저장 실패] HTTP 상태={}", response.getStatusCode().value());
+                            } else {
+                                log.warn("[면접 결과 저장 실패] type={}", error.getClass().getSimpleName());
+                            }
+                        })
                         .then()
         );
     }
