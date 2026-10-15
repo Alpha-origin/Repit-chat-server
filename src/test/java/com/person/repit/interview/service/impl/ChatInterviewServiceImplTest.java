@@ -3,8 +3,11 @@ package com.person.repit.interview.service.impl;
 import com.person.repit.common.metrics.RepitMetrics;
 import com.person.repit.interview.domain.ChatInterviewSession;
 import com.person.repit.interview.domain.ChatQuestion;
+import com.person.repit.interview.domain.CompanyContext;
+import com.person.repit.interview.domain.PersonaSnapshot;
 import com.person.repit.interview.dto.request.ChatAnswerRequest;
 import com.person.repit.interview.dto.request.ChatInterviewPrepareRequest;
+import com.person.repit.interview.dto.request.FollowQuestionAiRequest;
 import com.person.repit.interview.dto.response.FollowQuestionAiResponse;
 import com.person.repit.interview.service.AiQuestionClient;
 import com.person.repit.interview.service.InterviewResultDeliveryService;
@@ -12,6 +15,7 @@ import com.person.repit.interview.service.InterviewOperationLock;
 import com.person.repit.interview.type.InterviewLevel;
 import com.person.repit.interview.type.InterviewMajor;
 import com.person.repit.interview.type.InterviewMode;
+import com.person.repit.interview.type.InterviewRole;
 import com.person.repit.interview.type.InterviewStatus;
 import com.person.repit.interview.type.InterviewTone;
 import com.person.repit.interview.type.InterviewType;
@@ -23,6 +27,8 @@ import com.person.repit.tts.service.PersonaTtsProfileResolver;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.ArgumentCaptor;
 import org.springframework.data.redis.core.ReactiveRedisTemplate;
 import org.springframework.data.redis.core.ReactiveValueOperations;
@@ -31,6 +37,7 @@ import reactor.core.publisher.Mono;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -38,6 +45,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -98,6 +106,7 @@ class ChatInterviewServiceImplTest {
         );
 
         ChatInterviewSession session = (ChatInterviewSession) sessionCaptor.getValue();
+        assertThat(session.getCompany()).isNull();
         assertThat(session.getQuestions())
                 .extracting(ChatQuestion::getCategory, ChatQuestion::getIntention,
                         ChatQuestion::getSpokenText)
@@ -136,6 +145,83 @@ class ChatInterviewServiceImplTest {
 
         ChatQuestion followQuestion = session.getQuestions().get(1);
         assertThat(followQuestion.getIntention()).isEqualTo("분산락 선택 근거를 설명할 수 있는지");
+    }
+
+    @Test
+    void 준비_요청의_기업을_세션에_저장한다() {
+        var request = prepareRequest();
+        var company = new ChatInterviewPrepareRequest.Company();
+        company.setDisplayName("샘플커머스");
+        company.setInterviewerBrief("주문 동시성과 오너십을 다루는 샘플기업");
+        request.setCompany(company);
+        when(valueOperations.setIfAbsent(anyString(), any(), eq(Duration.ofHours(3))))
+                .thenReturn(Mono.just(true));
+
+        service.prepareInterview(request).block();
+
+        ArgumentCaptor<Object> captor = ArgumentCaptor.forClass(Object.class);
+        verify(valueOperations).setIfAbsent(anyString(), captor.capture(), eq(Duration.ofHours(3)));
+        var saved = (ChatInterviewSession) captor.getValue();
+        assertThat(saved.getCompany().getDisplayName()).isEqualTo(company.getDisplayName());
+        assertThat(saved.getCompany().getInterviewerBrief()).isEqualTo(company.getInterviewerBrief());
+    }
+
+    @Test
+    void 중복_준비_요청으로_기존_세션의_기업을_덮어쓰지_않는다() {
+        var existing = interviewSession();
+        existing.setCompany(CompanyContext.builder().displayName("최초기업")
+                .interviewerBrief("최초 요약").build());
+        when(valueOperations.setIfAbsent(anyString(), any(), eq(Duration.ofHours(3))))
+                .thenReturn(Mono.just(false));
+        when(valueOperations.get("chat:interview:session-id")).thenReturn(Mono.just(existing));
+        var request = prepareRequest();
+        var company = new ChatInterviewPrepareRequest.Company();
+        company.setDisplayName("다른기업");
+        company.setInterviewerBrief("다른 요약");
+        request.setCompany(company);
+
+        service.prepareInterview(request).block();
+
+        assertThat(existing.getCompany().getDisplayName()).isEqualTo("최초기업");
+        verify(valueOperations, never()).set(anyString(), any(), any(Duration.class));
+        verify(ttsScheduler, never()).register(anyString(), any(), any(), anyInt(), anyInt());
+    }
+
+    @ParameterizedTest
+    @EnumSource(InterviewRole.class)
+    void 다대일_면접의_모든_직책에_세션의_기업을_전달한다(InterviewRole role) {
+        var session = interviewSession();
+        session.setMode(InterviewMode.MULTI);
+        session.setCompany(CompanyContext.builder().displayName("샘플커머스")
+                .interviewerBrief("주문 동시성과 오너십을 다루는 샘플기업").build());
+        session.setPersonas(Map.of(3L, PersonaSnapshot.builder().personaId(3L)
+                .role(role).type(InterviewType.FRIENDLY).tone(InterviewTone.GENTLE)
+                .major(InterviewMajor.BACKEND).level(InterviewLevel.NORMAL).build()));
+        mockSession(session);
+        when(aiQuestionClient.decideFollowQuestion(any()))
+                .thenReturn(Mono.just(FollowQuestionAiResponse.notRequired()));
+
+        service.submitAnswer("session-id", answerRequest()).block();
+
+        var captor = ArgumentCaptor.forClass(FollowQuestionAiRequest.class);
+        verify(aiQuestionClient).decideFollowQuestion(captor.capture());
+        assertThat(captor.getValue().getRole()).isEqualTo(role);
+        assertThat(captor.getValue().getCompanyName()).isEqualTo("샘플커머스");
+        assertThat(captor.getValue().getCompanyBrief()).isEqualTo(session.getCompany().getInterviewerBrief());
+    }
+
+    @Test
+    void 기업이_없는_기존_세션은_AI_요청에도_기업을_넣지_않는다() {
+        mockSession(interviewSession());
+        when(aiQuestionClient.decideFollowQuestion(any()))
+                .thenReturn(Mono.just(FollowQuestionAiResponse.notRequired()));
+
+        service.submitAnswer("session-id", answerRequest()).block();
+
+        var captor = ArgumentCaptor.forClass(FollowQuestionAiRequest.class);
+        verify(aiQuestionClient).decideFollowQuestion(captor.capture());
+        assertThat(captor.getValue().getCompanyName()).isNull();
+        assertThat(captor.getValue().getCompanyBrief()).isNull();
     }
 
     private ChatInterviewPrepareRequest prepareRequest() {

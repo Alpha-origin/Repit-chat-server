@@ -1,6 +1,7 @@
 package com.person.repit.interview.dto.request;
 
 import com.person.repit.interview.domain.ChatQuestion;
+import com.person.repit.interview.domain.CompanyContext;
 import com.person.repit.interview.type.InterviewLevel;
 import com.person.repit.interview.type.InterviewMajor;
 import com.person.repit.interview.type.InterviewRole;
@@ -23,6 +24,8 @@ public class FollowQuestionAiRequest {
     private InterviewMajor major;
     private InterviewLevel level;
     private InterviewRole role;
+    private String companyName;
+    private String companyBrief;
 
     private Long questionId;
     private Long parentId;
@@ -45,6 +48,7 @@ public class FollowQuestionAiRequest {
             InterviewMajor major,
             InterviewLevel level,
             InterviewRole role,
+            CompanyContext company,
             ChatQuestion question,
             String answerContent,
             Integer responseTime
@@ -61,6 +65,8 @@ public class FollowQuestionAiRequest {
                 .major(major)
                 .level(level)
                 .role(role)
+                .companyName(company == null ? null : company.getDisplayName())
+                .companyBrief(company == null ? null : company.getInterviewerBrief())
                 .questionId(question.getQuestionId())
                 .parentId(question.getParentId())
                 .questionType(question.getType())

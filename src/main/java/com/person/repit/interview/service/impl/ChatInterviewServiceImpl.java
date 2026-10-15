@@ -5,6 +5,7 @@ import com.person.repit.common.exception.InvalidRequestException;
 import com.person.repit.interview.domain.ChatAnswer;
 import com.person.repit.interview.domain.ChatInterviewSession;
 import com.person.repit.interview.domain.ChatQuestion;
+import com.person.repit.interview.domain.CompanyContext;
 import com.person.repit.interview.domain.PersonaSnapshot;
 import com.person.repit.interview.dto.request.ChatAnswerRequest;
 import com.person.repit.interview.dto.request.ChatInterviewAllRequest;
@@ -99,6 +100,7 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
                     .tone(request.getTone())
                     .major(request.getMajor())
                     .level(request.getLevel())
+                    .company(toCompany(request.getCompany()))
                     .personas(personas)
                     .ttsProfiles(profiles)
                     .ttsProfileVersion(profiles == null || profiles.isEmpty()
@@ -119,6 +121,13 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
                                     .thenReturn(ChatInterviewResponse.from(session))
                             : getSession(request.getSessionId()).map(ChatInterviewResponse::from));
         });
+    }
+
+    private CompanyContext toCompany(ChatInterviewPrepareRequest.Company company) {
+        return company == null ? null : CompanyContext.builder()
+                .displayName(company.getDisplayName())
+                .interviewerBrief(company.getInterviewerBrief())
+                .build();
     }
 
     @Override
@@ -227,6 +236,7 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
                 persona == null ? session.getMajor() : persona.getMajor(),
                 persona == null ? session.getLevel() : persona.getLevel(),
                 persona == null ? InterviewRole.TECH : persona.getRole(),
+                session.getCompany(),
                 currentQuestion,
                 request.getContent(),
                 request.getResponseTime()
