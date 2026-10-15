@@ -7,7 +7,8 @@ import com.person.repit.interview.dto.request.ChatAnswerRequest;
 import com.person.repit.interview.dto.request.ChatInterviewPrepareRequest;
 import com.person.repit.interview.dto.response.FollowQuestionAiResponse;
 import com.person.repit.interview.service.AiQuestionClient;
-import com.person.repit.interview.service.ApiServerClient;
+import com.person.repit.interview.service.InterviewResultDeliveryService;
+import com.person.repit.interview.service.InterviewOperationLock;
 import com.person.repit.interview.type.InterviewLevel;
 import com.person.repit.interview.type.InterviewMajor;
 import com.person.repit.interview.type.InterviewMode;
@@ -63,10 +64,16 @@ class ChatInterviewServiceImplTest {
                         .status(AudioStatus.QUEUED)
                         .build()));
 
+        InterviewOperationLock lock = mock(InterviewOperationLock.class);
+        when(lock.execute(anyString(), any())).thenAnswer(invocation ->
+                ((java.util.function.Supplier<Mono<?>>) invocation.getArgument(1)).get());
+        InterviewResultDeliveryService delivery = mock(InterviewResultDeliveryService.class);
+        when(delivery.resume(anyString())).thenReturn(Mono.empty());
         service = new ChatInterviewServiceImpl(
                 aiQuestionClient,
                 redisTemplate,
-                mock(ApiServerClient.class),
+                delivery,
+                lock,
                 new RepitMetrics(new SimpleMeterRegistry()),
                 mock(PersonaTtsProfileResolver.class),
                 ttsScheduler
