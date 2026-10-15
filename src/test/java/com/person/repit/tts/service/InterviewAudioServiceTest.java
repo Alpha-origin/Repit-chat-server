@@ -8,6 +8,7 @@ import com.person.repit.tts.config.TtsProperties;
 import com.person.repit.tts.domain.AudioState;
 import com.person.repit.tts.domain.AudioStatus;
 import com.person.repit.tts.dto.InterviewAudioResponse;
+import com.person.repit.tts.dto.AudioResponseStatus;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -54,7 +55,7 @@ class InterviewAudioServiceTest {
 
         InterviewAudioResponse response = service.getAudio("session-id", 1L, 20).block();
 
-        assertThat(response.status()).isEqualTo(AudioStatus.FAILED);
+        assertThat(response.status()).isEqualTo(AudioResponseStatus.FAILED);
         assertThat(response.errorCode()).isEqualTo("TTS_DISABLED");
         verifyNoInteractions(states, scheduler);
     }
@@ -70,7 +71,7 @@ class InterviewAudioServiceTest {
 
         InterviewAudioResponse response = service.getAudio("session-id", 1L, 20).block();
 
-        assertThat(response.status()).isEqualTo(AudioStatus.READY);
+        assertThat(response.status()).isEqualTo(AudioResponseStatus.READY);
         assertThat(response.url()).isEqualTo("https://audio.example/1.mp3");
     }
 
@@ -86,7 +87,7 @@ class InterviewAudioServiceTest {
 
         InterviewAudioResponse response = service.getAudio("session-id", 1L, 0).block();
 
-        assertThat(response.status()).isEqualTo(AudioStatus.PENDING);
+        assertThat(response.status()).isEqualTo(AudioResponseStatus.PENDING);
         verify(scheduler).changePriority("session-id", 1L, 0);
     }
 
