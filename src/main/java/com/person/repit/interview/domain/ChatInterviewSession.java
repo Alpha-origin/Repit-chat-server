@@ -25,6 +25,7 @@ public class ChatInterviewSession {
     private InterviewMajor major;
     private InterviewLevel level;
     private InterviewMode mode;
+    private CompanyContext company;
     private Map<Long, PersonaSnapshot> personas;
     private Map<Long, TtsProfile> ttsProfiles;
     private String ttsProfileVersion;

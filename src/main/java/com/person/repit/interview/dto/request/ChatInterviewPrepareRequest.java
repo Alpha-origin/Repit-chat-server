@@ -8,6 +8,7 @@ import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -48,11 +49,29 @@ public class ChatInterviewPrepareRequest {
     private InterviewLevel level;
 
     @Valid
+    private Company company;
+
+    @Valid
     private List<Persona> personas;
 
     @Valid
     @NotEmpty
     private List<Question> questions;
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class Company {
+
+        @NotBlank
+        @Size(max = 30)
+        private String displayName;
+
+        @NotBlank
+        @Size(max = 600)
+        private String interviewerBrief;
+    }
 
     @Getter
     @Setter
