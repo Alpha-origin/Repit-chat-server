@@ -105,7 +105,10 @@ public class AiQuestionClientImpl implements AiQuestionClient {
             FollowQuestionAiResponse result =
                     objectMapper.readValue(json, FollowQuestionAiResponse.class);
 
-            if (result.getRequired() == null) {
+            if (result == null || result.getRequired() == null
+                    || (Boolean.TRUE.equals(result.getRequired())
+                    && (!StringUtils.hasText(result.getContent())
+                    || !StringUtils.hasText(result.getExpectedAnswer())))) {
                 result = FollowQuestionAiResponse.notRequired();
             }
 
