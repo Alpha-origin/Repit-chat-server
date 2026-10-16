@@ -1,5 +1,6 @@
 package com.person.repit.interview.service.impl;
 
+import com.person.repit.common.exception.InvalidRequestException;
 import com.person.repit.common.metrics.RepitMetrics;
 import com.person.repit.interview.domain.ChatInterviewSession;
 import com.person.repit.interview.domain.ChatQuestion;
@@ -29,10 +30,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.springframework.data.redis.core.ReactiveRedisTemplate;
 import org.springframework.data.redis.core.ReactiveValueOperations;
 import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -47,6 +50,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @SuppressWarnings("unchecked")
@@ -222,6 +226,29 @@ class ChatInterviewServiceImplTest {
         verify(aiQuestionClient).decideFollowQuestion(captor.capture());
         assertThat(captor.getValue().getCompanyName()).isNull();
         assertThat(captor.getValue().getCompanyBrief()).isNull();
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void 중복_질문_ID는_면접관_목록_유무와_관계없이_저장_전에_거절한다(boolean withPersonas) {
+        var request = prepareRequest();
+        request.getQuestions().get(1).setId(request.getQuestions().getFirst().getId());
+        if (withPersonas) {
+            var persona = new ChatInterviewPrepareRequest.Persona();
+            persona.setPersonaId(3L);
+            persona.setRole(InterviewRole.HR);
+            persona.setType(InterviewType.FRIENDLY);
+            persona.setTone(InterviewTone.GENTLE);
+            persona.setLevel(InterviewLevel.NORMAL);
+            request.setPersonas(List.of(persona));
+        }
+
+        StepVerifier.create(service.prepareInterview(request))
+                .expectErrorSatisfies(error -> assertThat(error)
+                        .isInstanceOf(InvalidRequestException.class)
+                        .hasMessage("질문 ID가 중복되었습니다."))
+                .verify();
+        verifyNoInteractions(redisTemplate, ttsScheduler, aiQuestionClient);
     }
 
     private ChatInterviewPrepareRequest prepareRequest() {
