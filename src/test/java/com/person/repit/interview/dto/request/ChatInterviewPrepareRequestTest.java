@@ -1,5 +1,7 @@
 package com.person.repit.interview.dto.request;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.person.repit.common.exception.handler.GlobalExceptionHandler;
 import com.person.repit.interview.controller.ChatInterviewController;
 import com.person.repit.interview.service.ChatInterviewService;
@@ -58,6 +60,42 @@ class ChatInterviewPrepareRequestTest {
                 .jsonPath("$.code").isEqualTo("VALIDATION_FAILED")
                 .jsonPath("$.errors['company." + field + "']").exists();
         verify(service, never()).prepareInterview(any());
+    }
+
+    @ParameterizedTest
+    @MethodSource("nullListElements")
+    void 배열_안의_null은_서비스_호출_전에_400으로_거절한다(
+            String field, String elements, String errorField
+    ) throws Exception {
+        ObjectMapper mapper = new ObjectMapper();
+        ObjectNode body = (ObjectNode) mapper.readTree(request(""));
+        body.set(field, mapper.readTree(elements));
+
+        client.post().uri("/chat/interviews").contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(body.toString()).exchange().expectStatus().isBadRequest().expectBody()
+                .jsonPath("$.code").isEqualTo("VALIDATION_FAILED")
+                .jsonPath("$.errors['" + errorField + "']").exists();
+        verify(service, never()).prepareInterview(any());
+    }
+
+    @Test
+    void 면접관_목록이_null인_기존_요청도_허용한다() {
+        client.post().uri("/chat/interviews").contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(request(",\"personas\":null")).exchange().expectStatus().isOk();
+        verify(service).prepareInterview(any());
+    }
+
+    private static Stream<Arguments> nullListElements() {
+        String question = "{\"id\":1,\"question\":\"질문\",\"personaId\":3}";
+        String persona = """
+                {"personaId":3,"role":"HR","type":"FRIENDLY","tone":"GENTLE","level":"NORMAL"}
+                """;
+        return Stream.of(
+                Arguments.of("questions", "[null]", "questions[0]"),
+                Arguments.of("questions", "[" + question + ",null]", "questions[1]"),
+                Arguments.of("personas", "[null]", "personas[0]"),
+                Arguments.of("personas", "[" + persona + ",null]", "personas[1]")
+        );
     }
 
     private static Stream<Arguments> invalidCompanies() {

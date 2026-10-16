@@ -52,11 +52,11 @@ public class ChatInterviewPrepareRequest {
     private Company company;
 
     @Valid
-    private List<Persona> personas;
+    private List<@NotNull Persona> personas;
 
     @Valid
     @NotEmpty
-    private List<Question> questions;
+    private List<@NotNull Question> questions;
 
     @Getter
     @Setter
