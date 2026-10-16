@@ -306,7 +306,7 @@ public class AiQuestionClientImpl implements AiQuestionClient {
     }
 
     private String escapeCompanyData(String value) {
-        return value.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
+        return value.replace("<", "&lt;").replace(">", "&gt;");
     }
 
     private String textOrNone(String value) {
