@@ -93,6 +93,9 @@ public class ReactiveChatInterviewWebSocketHandler implements WebSocketHandler {
             return Mono.just(error("메시지 형식이 올바르지 않습니다."));
         }
 
+        if (request == null) {
+            return Mono.just(error("메시지 형식이 올바르지 않습니다."));
+        }
         if (request.getType() == null) {
             return Mono.just(error("메시지 타입이 필요합니다."));
         }
@@ -118,6 +121,9 @@ public class ReactiveChatInterviewWebSocketHandler implements WebSocketHandler {
         }
         if (message.getResponseTime() == null) {
             return Mono.just(error("답변 응답 시간이 존재하지 않습니다."));
+        }
+        if (message.getResponseTime() < 0) {
+            return Mono.just(error("답변 응답 시간은 0 이상이어야 합니다."));
         }
         if (message.getContent() == null || message.getContent().isBlank()) {
             return Mono.just(error("답변 내용이 존재하지 않습니다."));

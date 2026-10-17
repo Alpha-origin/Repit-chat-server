@@ -2,6 +2,7 @@ package com.person.repit.interview.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.PositiveOrZero;
 import lombok.*;
 
 @Getter
@@ -14,6 +15,7 @@ public class ChatAnswerRequest {
     private Long questionId;
 
     @NotNull
+    @PositiveOrZero
     private Integer responseTime;
 
     @NotBlank

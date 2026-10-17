@@ -65,6 +65,7 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
     @Override
     public Mono<ChatInterviewResponse> prepareInterview(ChatInterviewPrepareRequest request) {
         return Mono.defer(() -> {
+            validateQuestionIds(request);
             validatePersonas(request);
             log.debug("sessionId={}, interviewId={}", request.getSessionId(), request.getInterviewId());
             String key = createKey(request.getSessionId());
@@ -400,6 +401,15 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
             }
         }
         return null;
+    }
+
+    private void validateQuestionIds(ChatInterviewPrepareRequest request) {
+        var ids = new HashSet<Long>();
+        for (ChatInterviewPrepareRequest.Question question : request.getQuestions()) {
+            if (!ids.add(question.getId())) {
+                throw new InvalidRequestException("질문 ID가 중복되었습니다.");
+            }
+        }
     }
 
     private void validatePersonas(ChatInterviewPrepareRequest request) {
