@@ -16,6 +16,7 @@ import reactor.core.publisher.Mono;
 
 import java.util.stream.Stream;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -49,6 +50,18 @@ class ChatInterviewPrepareRequestTest {
                         + "\",\"extra\":true}"))
                 .exchange().expectStatus().isOk();
         verify(service).prepareInterview(any());
+    }
+
+    @Test
+    void 기업_정보는_앞뒤_공백을_제거하고_유니코드_문자수로_검사한다() {
+        client.post().uri("/chat/interviews").contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(request(",\"company\":" + company("  " + "😀".repeat(30) + "  ",
+                        "  " + "😀".repeat(600) + "  ")))
+                .exchange().expectStatus().isOk();
+        var captured = org.mockito.ArgumentCaptor.forClass(ChatInterviewPrepareRequest.class);
+        verify(service).prepareInterview(captured.capture());
+        assertThat(captured.getValue().getCompany().getDisplayName()).isEqualTo("😀".repeat(30));
+        assertThat(captured.getValue().getCompany().getInterviewerBrief()).isEqualTo("😀".repeat(600));
     }
 
     @ParameterizedTest
@@ -105,10 +118,12 @@ class ChatInterviewPrepareRequestTest {
                 Arguments.of(company("", "요약"), "displayName"),
                 Arguments.of(company("   ", "요약"), "displayName"),
                 Arguments.of(company("가".repeat(31), "요약"), "displayName"),
+                Arguments.of(company("😀".repeat(31), "요약"), "displayName"),
                 Arguments.of("{\"displayName\":\"샘플기업\"}", "interviewerBrief"),
                 Arguments.of(company("샘플기업", ""), "interviewerBrief"),
                 Arguments.of(company("샘플기업", "   "), "interviewerBrief"),
-                Arguments.of(company("샘플기업", "나".repeat(601)), "interviewerBrief")
+                Arguments.of(company("샘플기업", "나".repeat(601)), "interviewerBrief"),
+                Arguments.of(company("샘플기업", "😀".repeat(601)), "interviewerBrief")
         );
     }
 

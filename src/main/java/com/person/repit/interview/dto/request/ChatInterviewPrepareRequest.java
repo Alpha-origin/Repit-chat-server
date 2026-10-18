@@ -1,6 +1,7 @@
 package com.person.repit.interview.dto.request;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.person.repit.common.validation.CodePointLength;
 import com.person.repit.interview.type.*;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -8,7 +9,6 @@ import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -65,12 +65,20 @@ public class ChatInterviewPrepareRequest {
     public static class Company {
 
         @NotBlank
-        @Size(max = 30)
+        @CodePointLength(max = 30)
         private String displayName;
 
         @NotBlank
-        @Size(max = 600)
+        @CodePointLength(max = 600)
         private String interviewerBrief;
+
+        public void setDisplayName(String value) {
+            displayName = value == null ? null : value.strip();
+        }
+
+        public void setInterviewerBrief(String value) {
+            interviewerBrief = value == null ? null : value.strip();
+        }
     }
 
     @Getter
