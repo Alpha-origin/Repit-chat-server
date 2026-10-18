@@ -133,8 +133,33 @@ class ChatInterviewServiceImplTest {
         service.submitAnswer("session-id", answerRequest()).block();
 
         ChatQuestion followQuestion = session.getQuestions().get(1);
+        assertThat(followQuestion.getQuestionId()).isEqualTo(-1L);
+        assertThat(followQuestion.getParentId()).isEqualTo(1L);
+        assertThat(followQuestion.getAskedByPersonaId()).isEqualTo(3L);
         assertThat(followQuestion.getCategory()).isEqualTo("tech_choice");
         assertThat(followQuestion.getIntention()).isEqualTo("락 범위를 설명할 수 있는지");
+    }
+
+    @Test
+    void 답변_요청_취소_후_늦게_도착한_AI_질문은_저장하거나_음성을_등록하지_않는다() {
+        var session = interviewSession();
+        session.setCompany(CompanyContext.builder().displayName("기업").interviewerBrief("요약").build());
+        mockSession(session);
+        var late = reactor.core.publisher.Sinks.<FollowQuestionAiResponse>one();
+        var cancelled = new java.util.concurrent.atomic.AtomicBoolean();
+        when(aiQuestionClient.decideFollowQuestion(any()))
+                .thenReturn(late.asMono().doOnCancel(() -> cancelled.set(true)));
+
+        var subscription = service.submitAnswer("session-id", answerRequest()).subscribe();
+        verify(aiQuestionClient).decideFollowQuestion(any());
+        subscription.dispose();
+        late.tryEmitValue(followResponse("늦은 의도"));
+
+        assertThat(cancelled).isTrue();
+        assertThat(session.getQuestions()).hasSize(2).allMatch(question -> question.getQuestionId() > 0);
+        assertThat(session.getCurrentQuestionIndex()).isZero();
+        verify(valueOperations).set(anyString(), any(), eq(Duration.ofHours(3)));
+        verifyNoInteractions(ttsScheduler);
     }
 
     @Test
