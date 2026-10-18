@@ -36,6 +36,10 @@ anthropic:
   connect-timeout: 2s
   response-timeout: 5s
   follow-up-max-tokens: 800
+  company-follow-up-enabled: ${ANTHROPIC_COMPANY_FOLLOW_UP_ENABLED:false}
+  company-follow-up-total-timeout: ${ANTHROPIC_COMPANY_FOLLOW_UP_TOTAL_TIMEOUT:5s}
+  company-follow-up-generation-timeout: ${ANTHROPIC_COMPANY_FOLLOW_UP_GENERATION_TIMEOUT:2s}
+  company-follow-up-max-tokens: ${ANTHROPIC_COMPANY_FOLLOW_UP_MAX_TOKENS:800}
   pool:
     max-connections: 50
     pending-acquire-max-count: 50
