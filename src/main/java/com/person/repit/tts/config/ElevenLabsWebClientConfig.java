@@ -1,6 +1,7 @@
 package com.person.repit.tts.config;
 
 import io.netty.channel.ChannelOption;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpHeaders;
@@ -11,27 +12,41 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.netty.http.client.HttpClient;
 import reactor.netty.resources.ConnectionProvider;
 
-@Configuration
+@Configuration(proxyBeanMethods = false)
 public class ElevenLabsWebClientConfig {
 
-    @Bean("elevenLabsWebClient")
-    public WebClient elevenLabsWebClient(TtsProperties properties) {
-        TtsProperties.ElevenLabs config = properties.getElevenlabs();
-        Assert.isTrue(config.getMaxInMemorySize() > 0,
-                "tts.elevenlabs.max-in-memory-size는 양수여야 합니다");
-        ConnectionProvider provider = ConnectionProvider.builder("elevenlabs")
-                .maxConnections(config.getPool().getMaxConnections())
-                .pendingAcquireMaxCount(config.getPool().getPendingAcquireMaxCount())
+    @Bean(name = "elevenLabsConnectionProvider", destroyMethod = "dispose")
+    public ConnectionProvider elevenLabsConnectionProvider(TtsProperties properties) {
+        TtsProperties.Pool pool = properties.getElevenlabs().getPool();
+        return ConnectionProvider.builder("elevenlabs")
+                .maxConnections(pool.getMaxConnections())
+                .pendingAcquireMaxCount(pool.getPendingAcquireMaxCount())
                 .build();
+    }
+
+    @Bean("elevenLabsWebClient")
+    public WebClient elevenLabsWebClient(
+            WebClient.Builder webClientBuilder,
+            @Qualifier("elevenLabsConnectionProvider") ConnectionProvider provider,
+            TtsProperties properties
+    ) {
+        TtsProperties.ElevenLabs config = properties.getElevenlabs();
+        var size = properties.isEnabled()
+                ? config.getMaxInMemorySize() : TtsProperties.ElevenLabs.DEFAULT_MAX_IN_MEMORY_SIZE;
+        Assert.notNull(size, "tts.elevenlabs.max-in-memory-size는 필수입니다");
+        long bytes = size.toBytes();
+        Assert.isTrue(bytes > 0 && bytes <= Integer.MAX_VALUE,
+                "tts.elevenlabs.max-in-memory-size는 1~2147483647바이트여야 합니다");
+        int maxInMemorySize = Math.toIntExact(bytes);
         HttpClient httpClient = HttpClient.create(provider)
                 .option(ChannelOption.CONNECT_TIMEOUT_MILLIS,
                         Math.toIntExact(config.getConnectTimeout().toMillis()))
                 .responseTimeout(config.getResponseTimeout());
 
-        return WebClient.builder()
+        return webClientBuilder.clone()
                 .baseUrl(config.getBaseUrl())
                 .clientConnector(new ReactorClientHttpConnector(httpClient))
-                .codecs(codecs -> codecs.defaultCodecs().maxInMemorySize(config.getMaxInMemorySize()))
+                .codecs(codecs -> codecs.defaultCodecs().maxInMemorySize(maxInMemorySize))
                 .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                 .defaultHeader(HttpHeaders.ACCEPT, "audio/mpeg")
                 .build();
