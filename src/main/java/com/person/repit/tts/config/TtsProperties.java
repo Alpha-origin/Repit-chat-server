@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
+import org.springframework.util.unit.DataSize;
 
 import java.time.Duration;
 import java.util.EnumMap;
@@ -42,13 +43,14 @@ public class TtsProperties {
     @Getter
     @Setter
     public static class ElevenLabs {
+        public static final DataSize DEFAULT_MAX_IN_MEMORY_SIZE = DataSize.ofMegabytes(8);
         private String baseUrl = "https://api.elevenlabs.io";
         private String apiKey = "";
         private String modelId = "eleven_multilingual_v2";
         private String outputFormat = "mp3_44100_128";
         private Duration connectTimeout = Duration.ofSeconds(3);
         private Duration responseTimeout = Duration.ofSeconds(20);
-        private int maxInMemorySize = 8 * 1024 * 1024;
+        private DataSize maxInMemorySize = DEFAULT_MAX_IN_MEMORY_SIZE;
         private Pool pool = new Pool();
     }
 
