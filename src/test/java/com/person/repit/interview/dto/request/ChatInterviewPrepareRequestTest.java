@@ -98,6 +98,31 @@ class ChatInterviewPrepareRequestTest {
         verify(service).prepareInterview(any());
     }
 
+    @ParameterizedTest
+    @org.junit.jupiter.params.provider.EnumSource(com.person.repit.interview.type.InterviewMajor.class)
+    void 모든_직무코드와_선택적_직무명을_수신한다(com.person.repit.interview.type.InterviewMajor major) {
+        client.post().uri("/chat/interviews").contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(request(",\"jobTitle\":\"퍼포먼스 마케터\"")
+                        .replace("BACKEND", major.name()))
+                .exchange().expectStatus().isOk();
+    }
+
+    @Test
+    void 직무명이_31자면_서비스_호출_전에_거부한다() {
+        client.post().uri("/chat/interviews").contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(request(",\"jobTitle\":\"" + "가".repeat(31) + "\""))
+                .exchange().expectStatus().isBadRequest();
+        verify(service, never()).prepareInterview(any());
+    }
+
+    @Test
+    void 알수없는_직무코드는_거부한다() {
+        client.post().uri("/chat/interviews").contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(request("").replace("BACKEND", "UNKNOWN"))
+                .exchange().expectStatus().isBadRequest();
+        verify(service, never()).prepareInterview(any());
+    }
+
     private static Stream<Arguments> nullListElements() {
         String question = "{\"id\":1,\"question\":\"질문\",\"personaId\":3}";
         String persona = """

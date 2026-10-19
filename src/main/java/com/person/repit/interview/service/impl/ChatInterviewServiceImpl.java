@@ -100,6 +100,7 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
                     .personality(request.getPersonality())
                     .tone(request.getTone())
                     .major(request.getMajor())
+                    .jobTitle(request.getJobTitle())
                     .level(request.getLevel())
                     .company(toCompany(request.getCompany()))
                     .personas(personas)
@@ -235,6 +236,8 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
                 persona == null ? session.getPersonality() : persona.getType(),
                 persona == null ? session.getTone() : persona.getTone(),
                 persona == null ? session.getMajor() : persona.getMajor(),
+                session.getMajor(),
+                session.getJobTitle(),
                 persona == null ? session.getLevel() : persona.getLevel(),
                 persona == null ? InterviewRole.TECH : persona.getRole(),
                 session.getCompany(),

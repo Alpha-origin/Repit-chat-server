@@ -177,6 +177,41 @@ class ChatInterviewServiceImplTest {
     }
 
     @Test
+    void 일반_직무와_직무명을_세션에_보존한다() {
+        var request = prepareRequest();
+        request.setMajor(InterviewMajor.GEN_MARKETING);
+        request.setJobTitle("퍼포먼스 마케터");
+        when(valueOperations.setIfAbsent(anyString(), any(), eq(Duration.ofHours(3))))
+                .thenReturn(Mono.just(true));
+        service.prepareInterview(request).block();
+        var captor = ArgumentCaptor.forClass(Object.class);
+        verify(valueOperations).setIfAbsent(anyString(), captor.capture(), eq(Duration.ofHours(3)));
+        var saved = (ChatInterviewSession) captor.getValue();
+        assertThat(saved.getMajor()).isEqualTo(InterviewMajor.GEN_MARKETING);
+        assertThat(saved.getJobTitle()).isEqualTo("퍼포먼스 마케터");
+    }
+
+    @ParameterizedTest
+    @EnumSource(InterviewRole.class)
+    void 일반_다대일의_뒷자리에도_시작시점_직무명을_전달한다(InterviewRole role) {
+        var session = interviewSession();
+        session.setMajor(InterviewMajor.GEN_MARKETING);
+        session.setJobTitle("퍼포먼스 마케터");
+        session.setPersonas(Map.of(3L, PersonaSnapshot.builder().personaId(3L)
+                .role(role).type(InterviewType.FRIENDLY).tone(InterviewTone.GENTLE)
+                .major(null).level(InterviewLevel.NORMAL).build()));
+        mockSession(session);
+        when(aiQuestionClient.decideFollowQuestion(any()))
+                .thenReturn(Mono.just(FollowQuestionAiResponse.notRequired()));
+        service.submitAnswer("session-id", answerRequest()).block();
+        var captor = ArgumentCaptor.forClass(FollowQuestionAiRequest.class);
+        verify(aiQuestionClient).decideFollowQuestion(captor.capture());
+        assertThat(captor.getValue().getMajor()).isNull();
+        assertThat(captor.getValue().getInterviewMajor()).isEqualTo(InterviewMajor.GEN_MARKETING);
+        assertThat(captor.getValue().getJobTitle()).isEqualTo("퍼포먼스 마케터");
+    }
+
+    @Test
     void 준비_요청의_기업을_세션에_저장한다() {
         var request = prepareRequest();
         var company = new ChatInterviewPrepareRequest.Company();

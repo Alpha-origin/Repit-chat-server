@@ -9,7 +9,13 @@ public enum InterviewMajor {
     QA_ENGINEER("QA 엔지니어"),
     SECURITY("정보보안"),
     PRODUCT_MANAGER("서비스 기획자 (PM·PO)"),
-    IT_CONSULTANT("IT 컨설턴트·기술영업");
+    IT_CONSULTANT("IT 컨설턴트·기술영업"),
+    GEN_STRATEGY("경영기획·전략"),
+    GEN_HR_ADMIN("인사·총무"),
+    GEN_FINANCE("재무·회계"),
+    GEN_MARKETING("마케팅·홍보"),
+    GEN_SALES("영업·고객관리"),
+    GEN_DESIGN("디자인");
 
     private final String label;
 
@@ -19,6 +25,13 @@ public enum InterviewMajor {
 
     public String label() {
         return label;
+    }
+
+    public boolean isGeneral() {
+        return switch (this) {
+            case GEN_STRATEGY, GEN_HR_ADMIN, GEN_FINANCE, GEN_MARKETING, GEN_SALES, GEN_DESIGN -> true;
+            default -> false;
+        };
     }
 
     public boolean isDevelopment() {

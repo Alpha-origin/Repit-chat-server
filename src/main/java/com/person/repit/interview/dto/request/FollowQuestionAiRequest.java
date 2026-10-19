@@ -22,6 +22,8 @@ public class FollowQuestionAiRequest {
     private InterviewType personality;
     private InterviewTone tone;
     private InterviewMajor major;
+    private InterviewMajor interviewMajor;
+    private String jobTitle;
     private InterviewLevel level;
     private InterviewRole role;
     private String companyName;
@@ -46,6 +48,8 @@ public class FollowQuestionAiRequest {
             InterviewType personality,
             InterviewTone tone,
             InterviewMajor major,
+            InterviewMajor interviewMajor,
+            String jobTitle,
             InterviewLevel level,
             InterviewRole role,
             CompanyContext company,
@@ -63,6 +67,8 @@ public class FollowQuestionAiRequest {
                 .personality(personality)
                 .tone(tone)
                 .major(major)
+                .interviewMajor(interviewMajor)
+                .jobTitle(jobTitle)
                 .level(level)
                 .role(role)
                 .companyName(company == null ? null : company.getDisplayName())
