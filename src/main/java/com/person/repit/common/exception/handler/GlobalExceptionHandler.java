@@ -6,6 +6,7 @@ import com.person.repit.common.exception.BusinessException;
 import com.person.repit.common.exception.InvalidRequestException;
 import com.person.repit.common.exception.NotFoundException;
 import com.person.repit.common.exception.ServerLogicException;
+import com.person.repit.interview.exception.InterviewNotFinishedException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -78,6 +79,13 @@ public class GlobalExceptionHandler {
             NotFoundException exception
     ) {
         return error(HttpStatus.NOT_FOUND, "NOT_FOUND", exception.getMessage());
+    }
+
+    @ExceptionHandler(InterviewNotFinishedException.class)
+    public ResponseEntity<Map<String, Object>> handleInterviewNotFinishedException(
+            InterviewNotFinishedException exception
+    ) {
+        return error(HttpStatus.CONFLICT, "INTERVIEW_NOT_FINISHED", exception.getMessage());
     }
 
     @ExceptionHandler(AlreadyUsingException.class)

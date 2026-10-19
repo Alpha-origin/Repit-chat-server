@@ -34,11 +34,13 @@ public class FinalizedInterviewRecovery {
                 .concatMap(session -> lock.execute(session.getSessionId(), () ->
                                 redis.opsForValue().get(PREFIX + session.getSessionId())
                                         .ofType(ChatInterviewSession.class)
+                                        .filter(current -> current.getStatus() == InterviewStatus.COMPLETED
+                                                || current.getStatus() == InterviewStatus.ABANDONED)
+                                        .doOnNext(current -> tts.cancelSession(current.getSessionId()))
                                         .flatMap(current -> outbox.find(current.getSessionId())
                                                 .switchIfEmpty(Mono.defer(() -> outbox.enqueue(
                                                         ChatInterviewAllRequest.from(current)))))
                                         .filter(item -> item.getState() != InterviewResultDelivery.State.BLOCKED)
-                                        .doOnNext(item -> tts.cancelSession(item.getSessionId()))
                                         .flatMap(item -> redis.delete(PREFIX + item.getSessionId())))
                         .onErrorResume(error -> {
                             log.warn("종료 면접 복구 대기 sessionId={}, type={}",
