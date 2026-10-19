@@ -19,6 +19,7 @@ import com.person.repit.interview.dto.response.FollowQuestionAiResponse;
 import com.person.repit.interview.exception.InterviewQuestionMismatchException;
 import com.person.repit.interview.exception.InterviewQuestionNotFoundException;
 import com.person.repit.interview.exception.InterviewSessionDataException;
+import com.person.repit.interview.exception.InterviewSessionAlreadyExistsException;
 import com.person.repit.interview.exception.InterviewSessionNotFoundException;
 import com.person.repit.interview.service.AiQuestionClient;
 import com.person.repit.interview.service.InterviewOperationLock;
@@ -44,6 +45,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -120,7 +122,22 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
                     .flatMap(created -> Boolean.TRUE.equals(created)
                             ? registerOriginalQuestions(session)
                                     .thenReturn(ChatInterviewResponse.from(session))
-                            : getSession(request.getSessionId()).map(ChatInterviewResponse::from));
+                            : existingPreparation(request));
+        });
+    }
+
+    private Mono<ChatInterviewResponse> existingPreparation(ChatInterviewPrepareRequest request) {
+        return getSession(request.getSessionId()).flatMap(existing -> {
+            boolean sameIdentity = Objects.equals(existing.getSessionId(), request.getSessionId())
+                    && Objects.equals(existing.getInterviewId(), request.getInterviewId())
+                    && Objects.equals(existing.getUserId(), request.getUserId());
+            if (!sameIdentity) {
+                // A session ID cannot silently resolve to another interview or user.
+                return Mono.error(new InterviewSessionAlreadyExistsException(
+                        "이미 다른 면접 식별자로 준비된 세션입니다."
+                ));
+            }
+            return Mono.just(ChatInterviewResponse.from(existing));
         });
     }
 
