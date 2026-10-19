@@ -1,6 +1,6 @@
 # Chat 기록 전송 안정화 (N-1 · N-2 · T-3)
 
-기준: `8c1f71f`, `fix/#37-chat-reliability`. Web 응답 JSON 및 면접 생성 규칙은 유지한다.
+기준: `8c1f71f`, `fix/#37-chat-reliability`. 면접 생성 규칙을 유지하며, 종료 상태 전달 보강은 아래 절을 따른다.
 
 ## 내부 인증
 
@@ -15,7 +15,7 @@ API 요청은 10초 안에 종료하며 2xx만 성공으로 취급한다.
 - 답변을 AI 판단 전에 저장한다. 최종 세션은 TTL 없이 보존한 뒤 전송 대기를 등록한다.
 - Redis `chat:interview:result:<sessionId>`에 최초 확정 JSON 문자열과 기존 interviewId를 저장한다.
   sessionId를 전송 작업 키로 사용하며 같은 세션의 중복 종료는 최초 상태를 반환한다.
-- 전송 성공 또는 일시 실패의 대기 상태 저장이 확인된 뒤 세션과 TTS 작업을 정리한다.
+- 최종 세션 저장이 확인되면 TTS를 즉시 중단한다. 전송 성공 또는 일시 실패의 대기 상태 저장이 확인된 뒤 세션을 정리한다.
 - 대기 등록·상태 저장 실패는 기존 오류 응답으로 전달하고 최종 세션을 유지한다.
 - 프로세스가 최종 세션 저장과 대기 등록 사이에 종료되면 `FinalizedInterviewRecovery`가 복구한다.
 - 성공 시 본문을 제거하고 SENT 접수 기록을 유지한다. 중복 요청은 답변이나 최종 기록을 재생성하지 않는다.
@@ -79,3 +79,37 @@ AOF 강제 종료 복원, 중복 등록, 워커 경합, 최종 세션 복구를 
 redis-server가 없는 환경에서는 이 통합 테스트만 건너뛴다.
 재시도 간격만큼 기다리는 테스트는 작성하지 않는다.
 compose 검증은 `docker compose config --quiet`로 수행하며 실제 비밀값을 출력하지 않는다.
+
+
+## 중도 종료와 정상 완료 구분
+
+면접 진행 중 `POST /chat/interviews/{sessionId}/complete`는 처리할 질문이 남아 있으면
+HTTP 409, code `INTERVIEW_NOT_FINISHED`를 반환한다. 거절 시 상태·진행 인덱스·최종 기록을 바꾸지 않는다.
+WebSocket COMPLETE도 같은 검사를 사용하며, ERROR를 보낸 뒤 연결을 유지해 답변 또는 QUIT를 받을 수 있다.
+서버가 마지막 답변을 처리해 다음 질문이 없으면 기존처럼 COMPLETED로 자동 종료한다.
+
+QUIT는 ABANDONED를 확정한다. 이미 확정된 COMPLETED/ABANDONED는 뒤이은 반대 종료나 답변으로 변경하지 않는다.
+요청·복구 워커는 같은 Redis operation lock과 최초 outbox 결과를 사용한다.
+동시 요청이 잠금을 얻지 못하면 기존 409 규칙을 따르며, 다시 요청하면 먼저 확정된 결과를 반환한다.
+단순 WebSocket 종료는 정상 완료나 중단으로 변환하지 않는다.
+
+WebSocket END에는 실제 최종 상태를 추가한다.
+
+```json
+{"type":"END","status":"ABANDONED","question":null,"message":"면접이 중단되었습니다."}
+```
+
+정상 종료는 status=COMPLETED다. QUIT 요청이어도 이미 완료됐다면 COMPLETED를 반환하고,
+COMPLETE 요청이어도 먼저 중단됐다면 ABANDONED를 반환한다. 메시지 문자열이나 요청 종류로 상태를 추측하지 않는다.
+일반 progress 응답도 서비스의 실제 status를 복사한다. 초기 QUESTION·ERROR에는 상태를 임의로 부여하지 않는다.
+
+최종 세션을 Redis에 보존한 뒤, API 전송·outbox 등록을 기다리기 전에 TTS를 정지한다.
+대기 등록이나 전송이 실패하면 세션은 남기고 복구한다. 복구 워커도 잠금 안에서 최종 상태를 다시 확인하고
+대기 등록 전 TTS를 정지한다. IN_PROGRESS로 바뀐 세션에는 종료 복구를 수행하지 않는다.
+
+ABANDONED 기록도 기존 API result 경로로 계속 전달한다. 질문·접수 답변·부모 관계·면접관·기업 정보는 보존한다.
+Chat은 피드백을 직접 요청하지 않는다. **피드백 생성을 실제로 차단하려면 API에도 COMPLETED 전용 생성·재시도·콜백 정책이 적용돼야 한다.**
+Analysis 접수 검증과 Web의 종료 상태 분기 역시 각 서버 명세에 따라 별도로 배포한다.
+
+검증에는 조기 COMPLETE의 REST/WS 거절, 종료 상태 직렬화, 중단 기록 보존, 대기 등록 전 TTS 중단,
+Redis 강제 종료 후 정상/중단 복원, 실제 잠금 아래 마지막 답변/QUIT 경합과 늦은 답변 무시를 포함한다.
