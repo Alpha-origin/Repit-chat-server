@@ -59,6 +59,7 @@ tts:
     output-format: mp3_44100_128
     connect-timeout: 3s
     response-timeout: 20s
+    max-in-memory-size: ${ELEVENLABS_MAX_IN_MEMORY_SIZE:8388608}
     pool:
       max-connections: 8
       pending-acquire-max-count: 16

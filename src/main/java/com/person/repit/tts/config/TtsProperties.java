@@ -48,6 +48,7 @@ public class TtsProperties {
         private String outputFormat = "mp3_44100_128";
         private Duration connectTimeout = Duration.ofSeconds(3);
         private Duration responseTimeout = Duration.ofSeconds(20);
+        private int maxInMemorySize = 8 * 1024 * 1024;
         private Pool pool = new Pool();
     }
 

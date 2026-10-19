@@ -11,4 +11,9 @@ public class TtsClientException extends RuntimeException {
     public boolean isRetryable() {
         return retryable;
     }
+
+    public TtsClientException(String message, boolean retryable, Throwable cause) {
+        super(message, cause);
+        this.retryable = retryable;
+    }
 }
