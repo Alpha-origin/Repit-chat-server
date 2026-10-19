@@ -12,6 +12,9 @@ import com.person.repit.interview.type.InterviewStatus;
 import com.person.repit.tts.service.InterviewTtsScheduler;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import reactor.core.publisher.Mono;
@@ -77,9 +80,11 @@ class InterviewResultRedisTest {
         }
     }
 
-    @Test
-    void Redis_강제종료후에도_전송대기와_마지막답변을_복원한다() throws Exception {
+    @ParameterizedTest
+    @EnumSource(value = InterviewStatus.class, names = {"COMPLETED", "ABANDONED"})
+    void Redis_강제종료후에도_전송대기와_마지막답변을_복원한다(InterviewStatus status) throws Exception {
         var session = session();
+        session.setStatus(status);
         var first = outbox.enqueue(ChatInterviewAllRequest.from(session)).block();
         var ttl = new org.springframework.data.redis.core.script.DefaultRedisScript<Long>(
                 "return redis.call('TTL', KEYS[1])", Long.class);
@@ -90,6 +95,7 @@ class InterviewResultRedisTest {
         // New repository instance simulates application restart; no in-memory queue participates.
         var restored = new InterviewResultOutbox(redis, new JacksonConfig().objectMapper()).find("s").block();
         assertThat(restored.getPayload()).isEqualTo(first.getPayload()).contains("마지막 답변");
+        assertThat(restored.getInterviewStatus()).isEqualTo(status);
         assertThat(outbox.findPending().collectList().block()).hasSize(1);
         ApiServerClient client = mock(ApiServerClient.class);
         when(client.saveInterviewPayload(restored.getPayload())).thenReturn(Mono.empty());
@@ -131,14 +137,70 @@ class InterviewResultRedisTest {
         assertThat(lock.execute("s", () -> Mono.just("recovered")).block()).isEqualTo("recovered");
     }
 
-    @Test
-    void 최종세션_저장직후_장애가_나도_복구워커가_전송대기를_등록한다() {
+    @ParameterizedTest
+    @EnumSource(value = InterviewStatus.class, names = {"COMPLETED", "ABANDONED"})
+    void 최종세션_저장직후_장애가_나도_복구워커가_전송대기를_등록한다(InterviewStatus status) {
         var objects = new RedisConfig().reactiveRedisTemplate(factory);
-        objects.opsForValue().set("chat:interview:s", session()).block();
-        var recovery = new FinalizedInterviewRecovery(objects, outbox, lock, mock(InterviewTtsScheduler.class));
+        var finalized = session();
+        finalized.setStatus(status);
+        objects.opsForValue().set("chat:interview:s", finalized).block();
+        var tts = mock(InterviewTtsScheduler.class);
+        var recovery = new FinalizedInterviewRecovery(objects, outbox, lock, tts);
         recovery.recover().block();
         assertThat(outbox.find("s").block().getPayload()).contains("마지막 답변");
+        assertThat(outbox.find("s").block().getInterviewStatus()).isEqualTo(status);
+        verify(tts).cancelSession("s");
         assertThat(objects.hasKey("chat:interview:s").block()).isFalse();
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void 종료_요청_경합과_늦은_답변은_최초_확정한_최종상태와_본문을_보존한다(boolean quitFirst) {
+        var objects = new RedisConfig().reactiveRedisTemplate(factory);
+        var active = session();
+        active.setStatus(InterviewStatus.IN_PROGRESS);
+        active.setAnswers(new java.util.ArrayList<>());
+        active.getQuestions().getFirst().setType(com.person.repit.interview.type.QuestionType.ORIGINAL);
+        objects.opsForValue().set("chat:interview:s", active).block();
+        ApiServerClient client = mock(ApiServerClient.class);
+        var sending = reactor.core.publisher.Sinks.<Void>empty();
+        var called = reactor.core.publisher.Sinks.<Boolean>one();
+        when(client.saveInterviewPayload(anyString())).thenReturn(Mono.defer(() -> {
+            called.tryEmitValue(true);
+            return sending.asMono();
+        }));
+        var meters = new io.micrometer.core.instrument.simple.SimpleMeterRegistry();
+        var delivery = new InterviewResultDeliveryService(outbox, client, new InterviewResultRetryPolicy(), meters);
+        var tts = mock(InterviewTtsScheduler.class);
+        var ai = mock(AiQuestionClient.class);
+        var service = new com.person.repit.interview.service.impl.ChatInterviewServiceImpl(ai, objects, delivery, lock,
+                new com.person.repit.common.metrics.RepitMetrics(meters),
+                mock(com.person.repit.tts.service.PersonaTtsProfileResolver.class), tts);
+        var answer = com.person.repit.interview.dto.request.ChatAnswerRequest.builder()
+                .questionId(17L).content("마지막 답변").responseTime(1).build();
+        var first = (quitFirst ? service.quitInterview("s") : service.submitAnswer("s", answer)).toFuture();
+        try {
+            called.asMono().block(Duration.ofSeconds(5));
+            verify(tts).cancelSession("s");
+            StepVerifier.create(quitFirst ? service.completeInterview("s") : service.quitInterview("s"))
+                    .expectError(AlreadyUsingException.class).verify(Duration.ofSeconds(5));
+            sending.tryEmitEmpty();
+            var expected = quitFirst ? InterviewStatus.ABANDONED : InterviewStatus.COMPLETED;
+            assertThat(first.orTimeout(5, java.util.concurrent.TimeUnit.SECONDS).join().getStatus()).isEqualTo(expected);
+            assertThat(service.completeInterview("s").block().getStatus()).isEqualTo(expected);
+            assertThat(service.quitInterview("s").block().getStatus()).isEqualTo(expected);
+            assertThat(service.submitAnswer("s", answer).block().getStatus()).isEqualTo(expected);
+            assertThat(outbox.find("s").block().getInterviewStatus()).isEqualTo(expected);
+            var payload = org.mockito.ArgumentCaptor.forClass(String.class);
+            verify(client).saveInterviewPayload(payload.capture());
+            assertThat(payload.getValue()).contains("\"status\":\"" + expected.name() + "\"");
+            assertThat(payload.getValue().contains("마지막 답변")).isEqualTo(!quitFirst);
+            assertThat(objects.hasKey("chat:interview:s").block()).isFalse();
+            verifyNoInteractions(ai);
+        } finally {
+            sending.tryEmitEmpty();
+            first.cancel(true);
+        }
     }
 
     private ChatInterviewSession session() {
