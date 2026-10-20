@@ -43,14 +43,14 @@ public final class CompanyFollowUpGenerator {
                 return Mono.just(decision);
             }
             if (!settings.enabled()) {
-                return fallback(decision, "disabled");
+                return fallback(request, decision, "disabled");
             }
             if (decision.getScore() == null || decision.getScore() < 0 || decision.getScore() > 5) {
-                return fallback(decision, "invalid_decision");
+                return fallback(request, decision, "invalid_decision");
             }
             long remaining = settings.totalTimeout().toNanos() - Math.max(0, FollowUpModelClient.now() - started);
             if (remaining <= 0) {
-                return fallback(decision, "deadline");
+                return fallback(request, decision, "deadline");
             }
             Duration timeout = Duration.ofNanos(Math.min(remaining, settings.generationTimeout().toNanos()));
             return Mono.defer(() -> client.call(CompanyFollowUpPrompt.body(mapper, model, settings.maxTokens(),
@@ -59,8 +59,8 @@ public final class CompanyFollowUpGenerator {
                     .map(content -> content.merge(decision))
                     .timeout(timeout)
                     .doOnNext(ignored -> log.info("follow_up.company status=applied"))
-                    .switchIfEmpty(Mono.defer(() -> fallback(decision, "empty_response")))
-                    .onErrorResume(error -> fallback(decision,
+                    .switchIfEmpty(Mono.defer(() -> fallback(request, decision, "empty_response")))
+                    .onErrorResume(error -> fallback(request, decision,
                             error instanceof TimeoutException ? "timeout" : "generation_failed"));
         });
     }
@@ -81,8 +81,10 @@ public final class CompanyFollowUpGenerator {
         }
     }
 
-    private Mono<FollowQuestionAiResponse> fallback(FollowQuestionAiResponse decision, String reason) {
-        log.info("follow_up.company status=fallback reason={}", reason);
+    private Mono<FollowQuestionAiResponse> fallback(FollowQuestionAiRequest request,
+                                                   FollowQuestionAiResponse decision, String reason) {
+        log.info("follow_up.company status=fallback reason={} sessionId={} interviewId={} questionId={}",
+                reason, request.getSessionId(), request.getInterviewId(), request.getQuestionId());
         return Mono.just(decision);
     }
 }

@@ -246,7 +246,9 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
             ChatAnswerRequest request
     ) {
         if (!canCreateFollowQuestion(session, currentQuestion)) {
-            log.info("[FOLLOW SKIPPED] follow question limit reached or current question is follow-up");
+            log.info("follow_up.skipped reason={} sessionId={} interviewId={} questionId={}",
+                    currentQuestion.getType() == QuestionType.FOLLOW ? "current_is_follow" : "policy_limit",
+                    session.getSessionId(), session.getInterviewId(), currentQuestion.getQuestionId());
             return Mono.just(FollowQuestionAiResponse.notRequired());
         }
 
