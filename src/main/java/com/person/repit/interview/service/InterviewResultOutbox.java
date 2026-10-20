@@ -3,6 +3,7 @@ package com.person.repit.interview.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.person.repit.interview.domain.InterviewResultDelivery;
 import com.person.repit.interview.dto.request.ChatInterviewAllRequest;
+import com.person.repit.interview.type.InterviewStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.springframework.data.redis.core.ScanOptions;
@@ -26,6 +27,10 @@ public class InterviewResultOutbox {
 
     public Mono<InterviewResultDelivery> enqueue(ChatInterviewAllRequest request) {
         return Mono.defer(() -> {
+            if (request.getStatus() != InterviewStatus.COMPLETED
+                    && request.getStatus() != InterviewStatus.ABANDONED) {
+                return Mono.error(new IllegalArgumentException("명시적 종료 상태가 필요합니다."));
+            }
             InterviewResultDelivery delivery = new InterviewResultDelivery();
             delivery.setSessionId(request.getSessionId());
             delivery.setInterviewId(request.getInterviewId());

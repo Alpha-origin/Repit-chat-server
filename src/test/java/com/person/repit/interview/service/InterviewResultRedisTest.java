@@ -15,6 +15,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.NullSource;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import reactor.core.publisher.Mono;
@@ -200,6 +201,88 @@ class InterviewResultRedisTest {
         } finally {
             sending.tryEmitEmpty();
             first.cancel(true);
+        }
+    }
+
+    @ParameterizedTest
+    @NullSource
+    @EnumSource(value = InterviewStatus.class, names = "IN_PROGRESS")
+    void 재시작한_Redis의_종료상태_누락기록도_보존후_차단한다(InterviewStatus status) throws Exception {
+        var item = outbox.enqueue(ChatInterviewAllRequest.from(session())).block();
+        item.setInterviewStatus(status);
+        var mapper = new JacksonConfig().objectMapper();
+        var payload = (com.fasterxml.jackson.databind.node.ObjectNode) mapper.readTree(item.getPayload());
+        if (status == null) payload.remove("status");
+        else payload.put("status", status.name());
+        item.setPayload(mapper.writeValueAsString(payload));
+        String original = item.getPayload();
+        outbox.save(item).block();
+        process.destroyForcibly().waitFor();
+        startProcess();
+        connect();
+        var restoredOutbox = new InterviewResultOutbox(redis, mapper);
+        var client = mock(ApiServerClient.class);
+        var service = new InterviewResultDeliveryService(restoredOutbox, client, new InterviewResultRetryPolicy(),
+                new io.micrometer.core.instrument.simple.SimpleMeterRegistry());
+        var restored = restoredOutbox.find("s").block();
+        StepVerifier.create(lock.execute("s", () -> service.deliver(restored)))
+                .expectError(com.person.repit.interview.exception.ApiServerResponseException.class).verify();
+        var blocked = restoredOutbox.find("s").block();
+        assertThat(blocked.getState()).isEqualTo(InterviewResultDelivery.State.BLOCKED);
+        assertThat(blocked.getInterviewStatus()).isEqualTo(status);
+        assertThat(blocked.getPayload()).isEqualTo(original);
+        verifyNoInteractions(client);
+    }
+
+    @Test
+    void AI_판단중_마지막답변과_종료요청이_경합해도_종료를_되돌리지_않는다() {
+        var objects = new RedisConfig().reactiveRedisTemplate(factory);
+        var active = session();
+        active.setStatus(InterviewStatus.IN_PROGRESS);
+        active.setQuestions(new java.util.ArrayList<>(List.of(
+                ChatQuestion.builder().questionId(17L).content("첫 질문")
+                        .type(com.person.repit.interview.type.QuestionType.ORIGINAL).build(),
+                ChatQuestion.builder().questionId(18L).content("마지막 질문")
+                        .type(com.person.repit.interview.type.QuestionType.ORIGINAL).build())));
+        active.setAnswers(new java.util.ArrayList<>(active.getAnswers()));
+        active.setCurrentQuestionIndex(1);
+        objects.opsForValue().set("chat:interview:s", active).block();
+        var ai = mock(AiQuestionClient.class);
+        var called = reactor.core.publisher.Sinks.<Boolean>one();
+        var decision = reactor.core.publisher.Sinks.<com.person.repit.interview.dto.response.FollowQuestionAiResponse>one();
+        when(ai.decideFollowQuestion(any())).thenReturn(Mono.defer(() -> {
+            called.tryEmitValue(true);
+            return decision.asMono();
+        }));
+        var client = mock(ApiServerClient.class);
+        when(client.saveInterviewPayload(anyString())).thenReturn(Mono.empty());
+        var meters = new io.micrometer.core.instrument.simple.SimpleMeterRegistry();
+        var delivery = new InterviewResultDeliveryService(outbox, client, new InterviewResultRetryPolicy(), meters);
+        var tts = mock(InterviewTtsScheduler.class);
+        var service = new com.person.repit.interview.service.impl.ChatInterviewServiceImpl(ai, objects, delivery, lock,
+                new com.person.repit.common.metrics.RepitMetrics(meters),
+                mock(com.person.repit.tts.service.PersonaTtsProfileResolver.class), tts);
+        var answer = com.person.repit.interview.dto.request.ChatAnswerRequest.builder()
+                .questionId(18L).content("최종 접수 답변").responseTime(1).build();
+        var pending = service.submitAnswer("s", answer).toFuture();
+        try {
+            called.asMono().block(Duration.ofSeconds(5));
+            StepVerifier.create(service.quitInterview("s")).expectError(AlreadyUsingException.class).verify();
+            StepVerifier.create(service.completeInterview("s")).expectError(AlreadyUsingException.class).verify();
+            verifyNoInteractions(client, tts);
+            decision.tryEmitValue(com.person.repit.interview.dto.response.FollowQuestionAiResponse.notRequired());
+            assertThat(pending.orTimeout(5, java.util.concurrent.TimeUnit.SECONDS).join().getStatus())
+                    .isEqualTo(InterviewStatus.COMPLETED);
+            assertThat(service.quitInterview("s").block().getStatus()).isEqualTo(InterviewStatus.COMPLETED);
+            assertThat(service.submitAnswer("s", answer).block().getStatus()).isEqualTo(InterviewStatus.COMPLETED);
+            verify(ai).decideFollowQuestion(any());
+            verify(tts).cancelSession("s");
+            verifyNoMoreInteractions(tts);
+            assertThat(outbox.find("s").block().getState()).isEqualTo(InterviewResultDelivery.State.SENT);
+            assertThat(objects.hasKey("chat:interview:s").block()).isFalse();
+        } finally {
+            decision.tryEmitEmpty();
+            pending.cancel(true);
         }
     }
 

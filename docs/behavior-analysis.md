@@ -37,7 +37,35 @@ API 타임아웃은 기존 정책에 따라 대기 기록을 보존하고 종료
 기존 `InterviewResultRedisTest`는 실제 로컬 Redis를 사용하여 장애 복구와 잠금 동작을 검증한다.
 
 검증 명령은 Java 21에서 `./gradlew test`다.
-이번 변경에서는 `./gradlew --offline --no-daemon test`로 전체 263개 테스트가 통과했고 실패·건너뜀은 없었다.
+기존 식별자 보강 당시에는 `./gradlew --offline --no-daemon test`로 전체 263개 테스트가 통과했고 실패·건너뜀은 없었다.
 수정 전에는 식별자 충돌 거절 4개 사례가 실패하는 것도 확인했다.
 S3 업로드 순서와 API 분석 요청·콜백·Web 중복 업로드 방지는 해당 서버의 통합 검증 대상이다.
 질문별 영상 시간축과 실시간 행동 분석은 이번 Chat 계약에 포함하지 않는다.
+
+## 2026-10-21 종료 계약 재검증
+
+기준은 fetch 후 `dcaa01f312921dc59f2fb18b19fc4016a33f2aa3`이며,
+작업 브랜치는 `feature/#59-action-analyze`다. 기존 main의 조기 COMPLETE 거절과 소켓 실제 status 전달은 유지했다.
+
+확인한 결함은 구 outbox의 `interviewStatus`가 null/IN_PROGRESS여도 재요청 응답을 COMPLETED로 만드는 fallback이다.
+신규 outbox는 COMPLETED/ABANDONED만 받는다. 구 기록의 상태가 유효하지 않으면 원문·식별자를 보존하고
+기존 실패 기록/알림 경로로 BLOCKED 처리한다. API로 전송하거나 성공 END를 반환하지 않는다.
+답변 수·요청 동사로 상태를 보충하지 않는다. 이미 BLOCKED인 항목은 실패 횟수를 다시 늘리지 않는다.
+
+원인 조사 시 최종 Redis 세션·최초 payload·API의 첫 저장 상태를 대조한다.
+422와 누락 상태는 무한 재시도하지 않으며 기존 BLOCKED 복구 절차를 따른다.
+최초 상태를 입증할 수 없는 기록을 임의 수정하지 않는다. 운영 데이터 조사·보정은 이번 변경에서 수행하지 않았다.
+
+Java 21에서 `./gradlew --offline --no-daemon test`로 전체 375건 통과, 실패/skip 0건을 확인했다.
+실제 로컬 redis-server를 사용하는 11건도 모두 실행했다. 추가 검사는 다음을 확인한다.
+
+- 종료 상태 누락/IN_PROGRESS의 신규 등록 거절과 구 기록의 BLOCKED 보존.
+- Redis 강제 종료·AOF 복원 후에도 같은 원문과 상태를 보존하고 잘못된 기록을 전송하지 않음.
+- AI 꼬리질문 판단 대기 중 마지막 ANSWER/QUIT/COMPLETE 경합에서 공유 잠금 유지.
+- AI 종료 후 첫 COMPLETED 유지와 늦은 ANSWER/QUIT에서 새 AI/TTS 작업이 생기지 않음.
+- ABANDONED의 API 2xx를 분석 실행 여부와 관계없이 SENT로 처리.
+
+준비 식별자·SOLO/MULTI 종료·REST/소켓·타임아웃 동일 payload 재전송·실제 HTTP 인증 헤더 검사는 기존 회귀에 포함된다.
+API 응답은 대역/로컬 HTTP 서버로 확인했으며 실제 배포 API·S3·토큰 일치·업로드 순서는 미검증이다.
+행동 워커 호출·행동 완료 대기는 Chat에 없으며 기존 면접/TEXT 경로에 추가하지 않았다.
+운영 배포·병합·실제 outbox 정리는 수행하지 않았다.
