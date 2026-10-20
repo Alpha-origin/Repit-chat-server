@@ -125,7 +125,6 @@ public class AiQuestionClientImpl implements AiQuestionClient {
         return Map.of(
                 "model", model,
                 "max_tokens", followUpMaxTokens,
-                "temperature", 0.3,
                 "system", createSystemPrompt(systemMajor(request)),
                 "messages", List.of(
                         Map.of(

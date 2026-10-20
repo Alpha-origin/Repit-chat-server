@@ -25,6 +25,15 @@ import static org.mockito.Mockito.mock;
 class AiQuestionClientImplTest {
 
     @Test
+    void 모델이_거절하는_temperature_옵션을_보내지_않는다() {
+        var request = jobRequest(InterviewMajor.QA_ENGINEER, InterviewRole.TECH);
+        Map<?, ?> body = ReflectionTestUtils.invokeMethod(client(), "createRequestBody", request);
+        assertThat(body.containsKey("temperature")).isFalse();
+        assertThat(body.get("messages")).isNotNull();
+    }
+
+
+    @Test
     void 사용자_프롬프트에_카테고리와_없는_의도를_표시한다() throws Exception {
         FollowQuestionAiRequest request = FollowQuestionAiRequest.builder()
                 .sessionId("session-id")
