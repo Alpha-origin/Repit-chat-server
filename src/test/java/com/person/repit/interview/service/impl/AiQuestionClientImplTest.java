@@ -25,6 +25,15 @@ import static org.mockito.Mockito.mock;
 class AiQuestionClientImplTest {
 
     @Test
+    void 모델이_거절하는_temperature_옵션을_보내지_않는다() {
+        var request = jobRequest(InterviewMajor.QA_ENGINEER, InterviewRole.TECH);
+        Map<?, ?> body = ReflectionTestUtils.invokeMethod(client(), "createRequestBody", request);
+        assertThat(body.containsKey("temperature")).isFalse();
+        assertThat(body.get("messages")).isNotNull();
+    }
+
+
+    @Test
     void 사용자_프롬프트에_카테고리와_없는_의도를_표시한다() throws Exception {
         FollowQuestionAiRequest request = FollowQuestionAiRequest.builder()
                 .sessionId("session-id")
@@ -133,6 +142,37 @@ class AiQuestionClientImplTest {
         assertThat(user).contains(instruction).contains(major.isDevelopment()
                 ? "기술적 근거와 트레이드오프를 확인하세요."
                 : "직무 판단의 근거와 대안, 본인이 한 일을 확인하세요.");
+    }
+
+    @ParameterizedTest
+    @org.junit.jupiter.params.provider.EnumSource(value = InterviewRole.class, names = {"HR", "CEO"})
+    void 비개발_면접은_전공_없는_면접관_차례에도_세션_직무로_시스템_프롬프트를_정한다(InterviewRole role) {
+        FollowQuestionAiRequest request = sessionRequest(InterviewMajor.QA_ENGINEER, null, role);
+        Map<?, ?> body = ReflectionTestUtils.invokeMethod(client(), "createRequestBody", request);
+        assertThat((String) body.get("system")).startsWith("당신은 QA 엔지니어 직무 면접에서");
+    }
+
+    @Test
+    void 개발_면접의_HR_차례는_개발자_기술_면접을_유지한다() throws Exception {
+        FollowQuestionAiRequest request = sessionRequest(InterviewMajor.BACKEND, null, InterviewRole.HR);
+        Map<?, ?> body = ReflectionTestUtils.invokeMethod(client(), "createRequestBody", request);
+        assertThat(body.get("system")).isEqualTo(originalPrompt("system"));
+    }
+
+    @Test
+    void 세션_직무가_없으면_면접관_전공으로_시스템_프롬프트를_정한다() throws Exception {
+        FollowQuestionAiRequest request = sessionRequest(null, InterviewMajor.QA_ENGINEER, InterviewRole.TECH);
+        Map<?, ?> body = ReflectionTestUtils.invokeMethod(client(), "createRequestBody", request);
+        assertThat(body.get("system")).isEqualTo(jobPrompt("nondev-qa-system"));
+    }
+
+    private FollowQuestionAiRequest sessionRequest(InterviewMajor session, InterviewMajor persona, InterviewRole role) {
+        return FollowQuestionAiRequest.builder().sessionId("session-id")
+                .interviewId(1L).userId(2L).personaId(3L)
+                .personality(InterviewType.FRIENDLY).tone(InterviewTone.GENTLE)
+                .major(persona).interviewMajor(session).level(InterviewLevel.NORMAL).role(role)
+                .questionId(4L).questionCategory("tech_choice").questionContent("질문")
+                .expectedAnswer("참고 답안").answerContent("답변").responseTime(10).build();
     }
 
     private FollowQuestionAiRequest jobRequest(InterviewMajor major, InterviewRole role) {

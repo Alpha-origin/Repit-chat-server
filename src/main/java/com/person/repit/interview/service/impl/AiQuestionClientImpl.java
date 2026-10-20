@@ -141,7 +141,6 @@ public class AiQuestionClientImpl implements AiQuestionClient {
         return Map.of(
                 "model", model,
                 "max_tokens", followUpMaxTokens,
-                "temperature", 0.3,
                 "system", createSystemPrompt(systemMajor(request)),
                 "messages", List.of(
                         Map.of(
@@ -153,7 +152,8 @@ public class AiQuestionClientImpl implements AiQuestionClient {
     }
 
     private InterviewMajor systemMajor(FollowQuestionAiRequest request) {
-        if (isGeneralInterview(request)) {
+        // 시스템 프롬프트는 면접 전체의 직무로 정한다. HR·CEO처럼 전공이 없는 면접관 차례에도 같은 직무 면접이다.
+        if (request.getInterviewMajor() != null) {
             return request.getInterviewMajor();
         }
         return request.getMajor() != null && request.getMajor().isGeneral() ? null : request.getMajor();

@@ -65,6 +65,7 @@ class CompanyFollowUpPromptTest {
     private String user(FollowQuestionAiRequest request) throws Exception {
         var candidate = MAPPER.readValue(BASE, FollowQuestionAiResponse.class);
         var body = CompanyFollowUpPrompt.body(MAPPER, "stub", 800, request, candidate);
+        assertThat(body.containsKey("temperature")).isFalse();
         var messages = (List<Map<String, Object>>) body.get("messages");
         return (String) messages.getFirst().get("content");
     }

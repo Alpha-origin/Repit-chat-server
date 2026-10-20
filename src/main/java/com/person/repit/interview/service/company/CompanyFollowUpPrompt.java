@@ -34,7 +34,7 @@ public final class CompanyFollowUpPrompt {
 
     public static Map<String, Object> body(ObjectMapper mapper, String model, int maxTokens,
                                           FollowQuestionAiRequest request, FollowQuestionAiResponse candidate) {
-        return Map.of("model", model, "max_tokens", maxTokens, "temperature", 0.3, "system", SYSTEM,
+        return Map.of("model", model, "max_tokens", maxTokens, "system", SYSTEM,
                 "messages", List.of(Map.of("role", "user", "content", user(mapper, request, candidate))));
     }
 
