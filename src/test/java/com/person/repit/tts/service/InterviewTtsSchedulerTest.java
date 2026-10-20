@@ -7,18 +7,27 @@ import com.person.repit.tts.domain.AudioState;
 import com.person.repit.tts.domain.TtsInput;
 import com.person.repit.tts.domain.TtsProfile;
 import com.person.repit.tts.domain.VoiceSettings;
+import com.person.repit.tts.domain.AudioStatus;
+import com.person.repit.tts.dto.InterviewAudioResponse;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.never;
 
 class InterviewTtsSchedulerTest {
     private InterviewTtsScheduler scheduler;
+    private TtsClient client;
+    private AudioStateRepository repository;
+    private AudioStorage storage;
 
     @BeforeEach
     void setUp() {
@@ -29,9 +38,9 @@ class InterviewTtsSchedulerTest {
                 "질문", "voice", "model", "mp3",
                 new VoiceSettings(0.5, 0.8, 0.1, 1.0, true), "1234567890abcdef"
         ));
-        TtsClient client = mock(TtsClient.class);
+        client = mock(TtsClient.class);
         when(client.synthesize(any())).thenReturn(Mono.never());
-        AudioStateRepository repository = mock(AudioStateRepository.class);
+        repository = mock(AudioStateRepository.class);
         when(repository.create(any(AudioState.class))).thenReturn(Mono.just(true));
         when(repository.get(any(), any())).thenAnswer(invocation -> Mono.just(
                 AudioState.builder()
@@ -42,11 +51,12 @@ class InterviewTtsSchedulerTest {
         ));
         when(repository.save(any(AudioState.class))).thenReturn(Mono.empty());
 
+        storage = mock(AudioStorage.class);
         scheduler = new InterviewTtsScheduler(
                 properties,
                 inputBuilder,
                 client,
-                mock(AudioStorage.class),
+                storage,
                 repository,
                 new RepitMetrics(new SimpleMeterRegistry())
         );
@@ -66,6 +76,27 @@ class InterviewTtsSchedulerTest {
 
         assertThat(scheduler.runningCount()).isEqualTo(4);
         assertThat(scheduler.queuedCount(2)).isEqualTo(1);
+    }
+
+    @Test
+    void 오디오_한도_초과_코드를_저장하고_조회_응답에_전달하며_재시도하지_않는다() {
+        var failed = new AtomicReference<InterviewAudioResponse>();
+        when(repository.save(any(AudioState.class))).thenAnswer(invocation -> {
+            AudioState state = invocation.getArgument(0);
+            if (state.getStatus() == AudioStatus.FAILED) {
+                failed.set(InterviewAudioResponse.from(state));
+            }
+            return Mono.empty();
+        });
+        when(client.synthesize(any())).thenReturn(Mono.error(new TtsClientException(
+                "수신 한도 초과", false, "TTS_AUDIO_TOO_LARGE", null)));
+
+        register("large-audio", 1L, 0);
+
+        assertThat(failed.get()).isNotNull();
+        assertThat(failed.get().errorCode()).isEqualTo("TTS_AUDIO_TOO_LARGE");
+        verify(client, times(1)).synthesize(any());
+        verify(storage, never()).put(any(), any(), any(), any());
     }
 
     private void register(String sessionId, Long questionId, int priority) {
