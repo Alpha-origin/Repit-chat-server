@@ -44,7 +44,8 @@ public class InterviewResultDeliveryService {
             return Mono.just(delivery);
         }
         var error = new ApiServerResponseException("면접 전송 기록의 명시적 종료 상태 확인이 필요합니다.");
-        if (delivery.getState() == InterviewResultDelivery.State.BLOCKED) {
+        if (delivery.getState() == InterviewResultDelivery.State.BLOCKED
+                || delivery.getState() == InterviewResultDelivery.State.SENT) {
             return Mono.error(error);
         }
         // Preserve the original payload; never infer completion from legacy records or answers.
