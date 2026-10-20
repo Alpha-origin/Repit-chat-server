@@ -67,3 +67,12 @@ call_count를 기록한다. 응답 envelope가 없으면 토큰은 0(실제 사�
 Java 21과 redis-server가 있는 환경에서 `./gradlew test`를 실행한다.
 가짜 WebClient와 가상 시계로 호출 분기·엄격 스키마·폴백·시간 예산·취소·슬롯 반환을 검증한다.
 기존 프롬프트 골든·준비 요청·Redis·질문 ID·부모 관계·TTS 테스트도 함께 실행한다.
+
+## 실시간 꼬리질문 진단 로그
+
+- `follow_up.decision`은 정상 생성(`generated`), 정상 생략(`model_not_required`), 호출 실패(`ai_timeout`/`ai_unavailable`), 잘못된 응답(`invalid_response`)을 구분한다.
+- 빈 HTTP 본문이나 잘못된 모델 응답도 꼬리질문 없음 결과를 반환해 면접을 계속 진행한다.
+- `follow_up.skipped`는 `current_is_follow`와 `policy_limit`을 구분한다.
+- 실패 로그의 sessionId/interviewId/questionId로 요청을 연결한다. 답변·기업 자료·모델 응답·예외 메시지는 이 로그에 넣지 않는다.
+- 기업 재작성 실패 시 A 단계 질문을 보존한다. 기존 질문 수·required 판정 정책은 변경하지 않는다.
+- 피드백 화면의 예상 꼬리질문은 분석 서버의 별도 산출물이다.
