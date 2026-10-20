@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.person.repit.common.config.JacksonConfig;
 import com.person.repit.common.metrics.RepitMetrics;
 import com.person.repit.interview.domain.ChatInterviewSession;
+import com.person.repit.interview.domain.ChatAnswer;
 import com.person.repit.interview.domain.ChatQuestion;
 import com.person.repit.interview.dto.request.ChatAnswerRequest;
 import com.person.repit.interview.dto.response.ChatProgressResponse;
@@ -89,6 +90,14 @@ class BehaviorInterviewFlowTest {
     @CsvSource({"SOLO,AUTO", "MULTI,AUTO", "SOLO,COMPLETE", "MULTI,COMPLETE", "SOLO,QUIT", "MULTI,QUIT"})
     void 영상_업로드나_분석없이_종료기록의_식별자를_보존한다(InterviewMode mode, String path) throws Exception {
         prepareSession(mode);
+        if (path.equals("COMPLETE")) {
+            String key = "chat:interview:api-session";
+            var session = (ChatInterviewSession) serializer.deserialize(sessions.get(key));
+            session.getAnswers().add(ChatAnswer.builder().questionId(303L)
+                    .content("마지막 답변").responseTime(12).build());
+            session.setCurrentQuestionIndex(-1);
+            sessions.put(key, serializer.serialize(session));
+        }
         Mono<ChatProgressResponse> operation = switch (path) {
             case "AUTO" -> service.submitAnswer("api-session", answer());
             case "QUIT" -> service.quitInterview("api-session");
@@ -102,7 +111,7 @@ class BehaviorInterviewFlowTest {
         assertThat(payload.path("status").asText()).isEqualTo(expected.name());
         assertThat(payload.path("qnaRequests").get(0).path("question").path("id").asLong()).isEqualTo(303L);
         assertThat(payload.path("qnaRequests").get(0).path("question").path("personaId").asLong()).isEqualTo(404L);
-        if (path.equals("AUTO")) {
+        if (!path.equals("QUIT")) {
             assertThat(payload.path("qnaRequests").get(0).path("answer").path("answerContent").asText())
                     .isEqualTo("마지막 답변");
         }
