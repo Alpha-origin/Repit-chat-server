@@ -26,6 +26,7 @@ import reactor.core.publisher.Mono;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeoutException;
 
 @Slf4j
 @Component
@@ -76,20 +77,35 @@ public class AiQuestionClientImpl implements AiQuestionClient {
                     }
                     return decision.flatMap(result -> companyGenerator.generate(request, result, started));
                 })))
-                .doOnError(
-                        exception -> !isExpectedFallback(exception),
-                        exception -> log.warn("follow_up status=failed reason={}", exception.getClass().getSimpleName())
-                )
+                .doOnNext(result -> log.info(
+                        "follow_up.decision status=completed reason={} sessionId={} interviewId={} questionId={}",
+                        Boolean.TRUE.equals(result.getRequired()) ? "generated" : "model_not_required",
+                        request.getSessionId(), request.getInterviewId(), request.getQuestionId()))
+                .doOnError(error -> log.warn(
+                        "follow_up.decision status=fallback reason={} sessionId={} interviewId={} questionId={}",
+                        fallbackReason(error), request.getSessionId(), request.getInterviewId(), request.getQuestionId()))
                 .onErrorReturn(FollowQuestionAiResponse.notRequired());
     }
 
-    private boolean isExpectedFallback(Throwable exception) {
-        return exception instanceof RejectedExecutionException
-                || exception.getCause() instanceof ReadTimeoutException;
+    private String fallbackReason(Throwable error) {
+        for (Throwable cause = error; cause != null; cause = cause.getCause()) {
+            if (cause instanceof InvalidFollowUpResponseException) return "invalid_response";
+            if (cause instanceof TimeoutException || cause instanceof ReadTimeoutException) return "ai_timeout";
+            if (cause instanceof RejectedExecutionException) return "ai_unavailable";
+        }
+        return "ai_unavailable";
+    }
+
+    private static final class InvalidFollowUpResponseException extends IllegalStateException {
+        private InvalidFollowUpResponseException() {
+            super("Invalid follow-up model response");
+        }
     }
 
     private Mono<FollowQuestionAiResponse> executeRequest(FollowQuestionAiRequest request) {
-        return modelClient.call(createRequestBody(request), "A").map(this::parseResponse);
+        return modelClient.call(createRequestBody(request), "A")
+                .map(this::parseResponse)
+                .switchIfEmpty(Mono.error(new InvalidFollowUpResponseException()));
     }
 
     private FollowQuestionAiResponse parseResponse(JsonNode response) {
@@ -97,7 +113,7 @@ public class AiQuestionClientImpl implements AiQuestionClient {
             String text = extractText(response);
 
             if (text == null || text.isBlank()) {
-                return FollowQuestionAiResponse.notRequired();
+                throw new InvalidFollowUpResponseException();
             }
 
             String json = cleanJson(text);
@@ -109,7 +125,7 @@ public class AiQuestionClientImpl implements AiQuestionClient {
                     || (Boolean.TRUE.equals(result.getRequired())
                     && (!StringUtils.hasText(result.getContent())
                     || !StringUtils.hasText(result.getExpectedAnswer())))) {
-                result = FollowQuestionAiResponse.notRequired();
+                throw new InvalidFollowUpResponseException();
             }
 
             return result;
@@ -117,7 +133,7 @@ public class AiQuestionClientImpl implements AiQuestionClient {
         } catch (RuntimeException exception) {
             throw exception;
         } catch (Exception exception) {
-            throw new IllegalStateException("Anthropic 응답 처리에 실패했습니다.", exception);
+            throw new InvalidFollowUpResponseException();
         }
     }
 
