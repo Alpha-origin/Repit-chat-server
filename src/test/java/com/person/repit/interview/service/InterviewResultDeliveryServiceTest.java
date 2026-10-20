@@ -9,6 +9,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.NullSource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
@@ -125,6 +127,47 @@ class InterviewResultDeliveryServiceTest {
         assertThat(meters.get("repit.interview.result.attention").counter().count()).isEqualTo(1);
         assertThat(item.getPayload()).isNotNull();
         assertThat(item.getState()).isEqualTo(InterviewResultDelivery.State.PENDING);
+    }
+
+    @ParameterizedTest
+    @NullSource
+    @EnumSource(value = InterviewStatus.class, names = "IN_PROGRESS")
+    void 구_전송기록의_상태누락은_완료로_승격하지_않고_차단한다(InterviewStatus status) {
+        item.setInterviewStatus(status);
+        String originalPayload = item.getPayload();
+        when(outbox.find("session-id")).thenReturn(Mono.just(item));
+        StepVerifier.create(service.resume("session-id")).expectError(ApiServerResponseException.class).verify();
+        assertThat(item.getState()).isEqualTo(InterviewResultDelivery.State.BLOCKED);
+        assertThat(item.getInterviewStatus()).isEqualTo(status);
+        assertThat(item.getPayload()).isEqualTo(originalPayload);
+        assertThat(item.getAttempts()).isEqualTo(1);
+        verify(outbox).save(item);
+        StepVerifier.create(service.deliver(item)).expectError(ApiServerResponseException.class).verify();
+        assertThat(item.getAttempts()).isEqualTo(1);
+        verifyNoInteractions(client);
+    }
+
+    @ParameterizedTest
+    @NullSource
+    @EnumSource(value = InterviewStatus.class, names = "IN_PROGRESS")
+    void 재전송도_종료상태가_없는_기록을_API로_전송하지_않는다(InterviewStatus status) {
+        item.setInterviewStatus(status);
+        StepVerifier.create(service.deliver(item)).expectError(ApiServerResponseException.class).verify();
+        assertThat(item.getState()).isEqualTo(InterviewResultDelivery.State.BLOCKED);
+        assertThat(item.getPayload()).isNotNull();
+        verify(outbox).save(item);
+        verifyNoInteractions(client);
+    }
+
+    @Test
+    void 중단_기록의_2xx는_분석여부와_관계없이_전송완료다() {
+        item.setInterviewStatus(InterviewStatus.ABANDONED);
+        when(outbox.enqueue(any())).thenReturn(Mono.just(item));
+        when(client.saveInterviewPayload(item.getPayload())).thenReturn(Mono.empty());
+        var response = service.submit(ChatInterviewAllRequest.builder().status(InterviewStatus.ABANDONED).build()).block();
+        assertThat(response.getStatus()).isEqualTo(InterviewStatus.ABANDONED);
+        assertThat(item.getState()).isEqualTo(InterviewResultDelivery.State.SENT);
+        assertThat(item.getPayload()).isNull();
     }
 
     private WebClientResponseException httpError(int code) {
