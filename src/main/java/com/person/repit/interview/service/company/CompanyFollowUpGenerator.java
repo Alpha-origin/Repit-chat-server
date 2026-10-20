@@ -38,9 +38,16 @@ public final class CompanyFollowUpGenerator {
 
     public Mono<FollowQuestionAiResponse> generate(FollowQuestionAiRequest request, FollowQuestionAiResponse decision,
                                                   long started) {
+        return generateWithOutcome(request, decision, started).map(Outcome::response);
+    }
+
+    public record Outcome(FollowQuestionAiResponse response, String fallbackReason) {}
+
+    public Mono<Outcome> generateWithOutcome(FollowQuestionAiRequest request, FollowQuestionAiResponse decision,
+                                             long started) {
         return Mono.defer(() -> {
             if (!hasCompany(request) || !Boolean.TRUE.equals(decision.getRequired())) {
-                return Mono.just(decision);
+                return Mono.just(new Outcome(decision, null));
             }
             if (!settings.enabled()) {
                 return fallback(request, decision, "disabled");
@@ -56,7 +63,7 @@ public final class CompanyFollowUpGenerator {
             return Mono.defer(() -> client.call(CompanyFollowUpPrompt.body(mapper, model, settings.maxTokens(),
                             request, decision), "B"))
                     .map(this::parse)
-                    .map(content -> content.merge(decision))
+                    .map(content -> new Outcome(content.merge(decision), null))
                     .timeout(timeout)
                     .doOnNext(ignored -> log.info("follow_up.company status=applied"))
                     .switchIfEmpty(Mono.defer(() -> fallback(request, decision, "empty_response")))
@@ -81,10 +88,10 @@ public final class CompanyFollowUpGenerator {
         }
     }
 
-    private Mono<FollowQuestionAiResponse> fallback(FollowQuestionAiRequest request,
+    private Mono<Outcome> fallback(FollowQuestionAiRequest request,
                                                    FollowQuestionAiResponse decision, String reason) {
         log.info("follow_up.company status=fallback reason={} sessionId={} interviewId={} questionId={}",
                 reason, request.getSessionId(), request.getInterviewId(), request.getQuestionId());
-        return Mono.just(decision);
+        return Mono.just(new Outcome(decision, reason));
     }
 }

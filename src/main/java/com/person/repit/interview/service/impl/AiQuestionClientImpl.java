@@ -75,12 +75,16 @@ public class AiQuestionClientImpl implements AiQuestionClient {
                     if (CompanyFollowUpGenerator.hasCompany(request)) {
                         decision = decision.timeout(companySettings.totalTimeout());
                     }
-                    return decision.flatMap(result -> companyGenerator.generate(request, result, started));
+                    return decision.flatMap(result -> companyGenerator.generateWithOutcome(request, result, started));
                 })))
                 .doOnNext(result -> log.info(
-                        "follow_up.decision status=completed reason={} sessionId={} interviewId={} questionId={}",
-                        Boolean.TRUE.equals(result.getRequired()) ? "generated" : "model_not_required",
+                        "follow_up.decision status={} reason={} sessionId={} interviewId={} questionId={}",
+                        result.fallbackReason() == null ? "completed" : "fallback",
+                        result.fallbackReason() == null
+                                ? (Boolean.TRUE.equals(result.response().getRequired()) ? "generated" : "model_not_required")
+                                : "company_" + result.fallbackReason(),
                         request.getSessionId(), request.getInterviewId(), request.getQuestionId()))
+                .map(CompanyFollowUpGenerator.Outcome::response)
                 .doOnError(error -> log.warn(
                         "follow_up.decision status=fallback reason={} sessionId={} interviewId={} questionId={}",
                         fallbackReason(error), request.getSessionId(), request.getInterviewId(), request.getQuestionId()))
