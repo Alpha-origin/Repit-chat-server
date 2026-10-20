@@ -9,6 +9,7 @@ import com.person.repit.interview.dto.request.ChatWebSocketAnswerMessageRequest;
 import com.person.repit.interview.dto.request.ChatWebSocketMessageRequest;
 import com.person.repit.interview.dto.response.ChatProgressResponse;
 import com.person.repit.interview.dto.response.ChatWebSocketMessageResponse;
+import com.person.repit.interview.exception.InterviewNotFinishedException;
 import com.person.repit.interview.service.ChatInterviewService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -141,12 +142,14 @@ public class ReactiveChatInterviewWebSocketHandler implements WebSocketHandler {
     private Mono<OutboundMessage> processCompletion(String sessionId) {
         return chatInterviewService.completeInterview(sessionId)
                 .map(progress -> progressMessage(progress, true))
-                .doOnSuccess(ignored -> metrics.webSocketMessageProcessed());
+                .doOnSuccess(ignored -> metrics.webSocketMessageProcessed())
+                .onErrorResume(InterviewNotFinishedException.class,
+                        exception -> Mono.just(error(exception.getMessage())));
     }
 
     private Mono<OutboundMessage> processQuit(String sessionId) {
         return chatInterviewService.quitInterview(sessionId)
-                .map(progress -> closeNormally(ChatWebSocketMessageResponse.end(progress.getMessage())))
+                .map(progress -> progressMessage(progress, true))
                 .doOnSuccess(ignored -> metrics.webSocketMessageProcessed());
     }
 

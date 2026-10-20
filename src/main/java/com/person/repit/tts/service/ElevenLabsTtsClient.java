@@ -3,6 +3,7 @@ package com.person.repit.tts.service;
 import com.person.repit.tts.config.TtsProperties;
 import com.person.repit.tts.domain.TtsInput;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.core.io.buffer.DataBufferLimitException;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.ClientResponse;
@@ -59,6 +60,10 @@ public class ElevenLabsTtsClient implements TtsClient {
             ));
         }
         return response.bodyToMono(byte[].class)
+                .onErrorMap(DataBufferLimitException.class, error -> new TtsClientException(
+                        "ElevenLabs 오디오가 수신 한도를 초과했습니다: "
+                                + properties.getElevenlabs().getMaxInMemorySize().toBytes() + "바이트",
+                        false, "TTS_AUDIO_TOO_LARGE", error))
                 .filter(bytes -> bytes.length > 0)
                 .switchIfEmpty(Mono.error(
                         new TtsClientException("ElevenLabs 오디오가 비어 있습니다", false)

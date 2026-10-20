@@ -209,7 +209,9 @@ public class InterviewTtsScheduler {
         }
         state.setStatus(AudioStatus.FAILED);
         state.setErrorCode(error instanceof AudioStorageException
-                ? "AUDIO_STORAGE_FAILED" : "TTS_GENERATION_FAILED");
+                ? "AUDIO_STORAGE_FAILED"
+                : error instanceof TtsClientException clientError
+                        ? clientError.getErrorCode() : "TTS_GENERATION_FAILED");
         state.setUpdatedAt(Instant.now());
         log.warn("TTS 작업 실패 sessionId={}, questionId={}",
                 job.getSessionId(), job.getQuestionId(), error);
