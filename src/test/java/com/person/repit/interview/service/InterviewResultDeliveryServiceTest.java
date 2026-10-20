@@ -159,6 +159,33 @@ class InterviewResultDeliveryServiceTest {
         verifyNoInteractions(client);
     }
 
+    @ParameterizedTest
+    @NullSource
+    @EnumSource(value = InterviewStatus.class, names = "IN_PROGRESS")
+    void 종료상태가_잘못된_SENT_구기록은_재요청에도_변경하지_않는다(InterviewStatus status) {
+        item.setInterviewStatus(status);
+        item.setState(InterviewResultDelivery.State.SENT);
+        item.setPayload(null);
+        item.setAttempts(2);
+        item.setFirstFailureAt(Instant.EPOCH);
+        item.setLastError("PREVIOUS_FAILURE");
+        var original = new InterviewResultDelivery();
+        org.springframework.beans.BeanUtils.copyProperties(item, original);
+        when(outbox.find("session-id")).thenReturn(Mono.just(item));
+
+        for (int attempt = 0; attempt < 2; attempt++) {
+            StepVerifier.create(service.resume("session-id"))
+                    .expectError(ApiServerResponseException.class).verify();
+            StepVerifier.create(service.deliver(item))
+                    .expectError(ApiServerResponseException.class).verify();
+        }
+
+        assertThat(item).usingRecursiveComparison().isEqualTo(original);
+        assertThat(meters.find("repit.interview.result.attention").meters()).isEmpty();
+        verify(outbox, never()).save(any());
+        verifyNoInteractions(client);
+    }
+
     @Test
     void 중단_기록의_2xx는_분석여부와_관계없이_전송완료다() {
         item.setInterviewStatus(InterviewStatus.ABANDONED);
