@@ -29,6 +29,8 @@ class FollowQuestionAiRequestTest {
                 InterviewType.FRIENDLY,
                 InterviewTone.GENTLE,
                 InterviewMajor.BACKEND,
+                InterviewMajor.BACKEND,
+                null,
                 InterviewLevel.NORMAL,
                 InterviewRole.TECH,
                 null,
@@ -60,6 +62,8 @@ class FollowQuestionAiRequestTest {
                 InterviewType.FRIENDLY,
                 InterviewTone.GENTLE,
                 InterviewMajor.BACKEND,
+                InterviewMajor.BACKEND,
+                null,
                 InterviewLevel.NORMAL,
                 InterviewRole.TECH,
                 null,
@@ -83,7 +87,9 @@ class FollowQuestionAiRequestTest {
 
         FollowQuestionAiRequest request = FollowQuestionAiRequest.of(
                 "session-id", 1L, 2L, 3L, InterviewType.FRIENDLY, InterviewTone.GENTLE,
-                InterviewMajor.BACKEND, InterviewLevel.NORMAL, InterviewRole.TECH,
+                InterviewMajor.BACKEND,
+                InterviewMajor.BACKEND,
+                null, InterviewLevel.NORMAL, InterviewRole.TECH,
                 company, question, "답변", 10
         );
 

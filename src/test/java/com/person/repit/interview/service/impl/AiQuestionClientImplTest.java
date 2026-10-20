@@ -56,7 +56,7 @@ class AiQuestionClientImplTest {
 
     @Test
     void 시스템_프롬프트가_꼬리질문_의도를_새로_작성하도록_지시한다() throws Exception {
-        String prompt = ReflectionTestUtils.invokeMethod(client(), "createSystemPrompt");
+        String prompt = ReflectionTestUtils.invokeMethod(client(), "createSystemPrompt", InterviewMajor.BACKEND);
 
         assertThat(prompt)
                 .contains("category는 질문 분류 정보로만 참고합니다")
@@ -102,6 +102,52 @@ class AiQuestionClientImplTest {
         assertThat(withCompany.get("system")).isEqualTo(originalPrompt("system"));
         String user = ReflectionTestUtils.invokeMethod(client(), "createUserPrompt", companyRequest(name));
         assertThat(user).isEqualTo(originalPrompt("user")).doesNotContain("[기업 컨텍스트]");
+    }
+
+    @Test
+    void 비개발_QA_기준_원문을_유지한다() throws Exception {
+        FollowQuestionAiRequest request = jobRequest(InterviewMajor.QA_ENGINEER, InterviewRole.TECH);
+        assertThat((String) ReflectionTestUtils.invokeMethod(client(), "createSystemPrompt", request.getMajor()))
+                .isEqualTo(jobPrompt("nondev-qa-system"));
+        assertThat((String) ReflectionTestUtils.invokeMethod(client(), "createUserPrompt", request))
+                .isEqualTo(jobPrompt("nondev-qa-user"));
+    }
+
+    @ParameterizedTest
+    @org.junit.jupiter.params.provider.CsvSource({
+            "FRONTEND,프론트엔드 기술 면접관의 관점에서 질문하세요.",
+            "BACKEND,백엔드 기술 면접관의 관점에서 질문하세요.",
+            "WEB_PUBLISHER,웹 퍼블리셔 기술 면접관의 관점에서 질문하세요.",
+            "DATA_ANALYST,데이터 분석 전문 면접관의 관점에서 문제 정의",
+            "DBA_INFRA,DBA·인프라 전문 면접관의 관점에서 설계",
+            "QA_ENGINEER,QA 전문 면접관의 관점에서 테스트 설계",
+            "SECURITY,공격 코드를 새로 작성하게 하지 마세요.",
+            "PRODUCT_MANAGER,서비스 기획 전문 면접관의 관점에서 문제 정의",
+            "IT_CONSULTANT,IT 컨설팅 전문 면접관의 관점에서 고객 요구 분석"
+    })
+    void IT_직무별_관점과_역할을_선택한다(InterviewMajor major, String instruction) {
+        FollowQuestionAiRequest request = jobRequest(major, InterviewRole.TECH);
+        String system = ReflectionTestUtils.invokeMethod(client(), "createSystemPrompt", major);
+        String user = ReflectionTestUtils.invokeMethod(client(), "createUserPrompt", request);
+        assertThat(system).startsWith("당신은 " + (major.isDevelopment() ? "개발자 기술" : major.label() + " 직무") + " 면접에서");
+        assertThat(user).contains(instruction).contains(major.isDevelopment()
+                ? "기술적 근거와 트레이드오프를 확인하세요."
+                : "직무 판단의 근거와 대안, 본인이 한 일을 확인하세요.");
+    }
+
+    private FollowQuestionAiRequest jobRequest(InterviewMajor major, InterviewRole role) {
+        return FollowQuestionAiRequest.builder().sessionId("session-id")
+                .interviewId(1L).userId(2L).personaId(3L)
+                .personality(InterviewType.FRIENDLY).tone(InterviewTone.GENTLE)
+                .major(major).level(InterviewLevel.NORMAL).role(role)
+                .questionId(4L).questionCategory("tech_choice").questionContent("질문")
+                .expectedAnswer("참고 답안").answerContent("답변").responseTime(10).build();
+    }
+
+    private String jobPrompt(String name) throws IOException {
+        try (var input = getClass().getResourceAsStream("/prompts/follow-question/" + name + ".txt")) {
+            return new String(java.util.Objects.requireNonNull(input).readAllBytes(), StandardCharsets.UTF_8);
+        }
     }
 
     private FollowQuestionAiRequest companyRequest(String name) {

@@ -23,6 +23,7 @@ public class ChatInterviewSession {
     private InterviewType personality;
     private InterviewTone tone;
     private InterviewMajor major;
+    private String jobTitle;
     private InterviewLevel level;
     private InterviewMode mode;
     private CompanyContext company;
