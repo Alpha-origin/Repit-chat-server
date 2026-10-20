@@ -1,6 +1,8 @@
 package com.person.repit.interview.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.person.repit.common.type.MessageType;
+import com.person.repit.interview.type.InterviewStatus;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -9,6 +11,8 @@ import lombok.Getter;
 public class ChatWebSocketMessageResponse {
 
     private MessageType type;
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private InterviewStatus status;
     private ChatQuestionResponse question;
     private String message;
 
@@ -21,24 +25,11 @@ public class ChatWebSocketMessageResponse {
     }
 
     public static ChatWebSocketMessageResponse progress(ChatProgressResponse progress) {
-        if (progress.getQuestion() == null) {
-            return ChatWebSocketMessageResponse.builder()
-                    .type(MessageType.END)
-                    .message(progress.getMessage())
-                    .build();
-        }
-
         return ChatWebSocketMessageResponse.builder()
-                .type(MessageType.QUESTION)
+                .type(progress.getQuestion() == null ? MessageType.END : MessageType.QUESTION)
+                .status(progress.getStatus())
                 .question(progress.getQuestion())
                 .message(progress.getMessage())
-                .build();
-    }
-
-    public static ChatWebSocketMessageResponse end(String message) {
-        return ChatWebSocketMessageResponse.builder()
-                .type(MessageType.END)
-                .message(message)
                 .build();
     }
 

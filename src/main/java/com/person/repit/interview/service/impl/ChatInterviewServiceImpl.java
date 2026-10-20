@@ -17,6 +17,7 @@ import com.person.repit.interview.dto.response.ChatProgressResponse;
 import com.person.repit.interview.dto.response.ChatQuestionResponse;
 import com.person.repit.interview.dto.response.FollowQuestionAiResponse;
 import com.person.repit.interview.exception.InterviewQuestionMismatchException;
+import com.person.repit.interview.exception.InterviewNotFinishedException;
 import com.person.repit.interview.exception.InterviewQuestionNotFoundException;
 import com.person.repit.interview.exception.InterviewSessionDataException;
 import com.person.repit.interview.exception.InterviewSessionNotFoundException;
@@ -211,8 +212,14 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
     private Mono<ChatProgressResponse> finishOnce(String sessionId, InterviewStatus status) {
         return operationLock.execute(sessionId, () -> resultDelivery.resume(sessionId)
                 .switchIfEmpty(Mono.defer(() -> getSession(sessionId)
-                        .flatMap(session -> finishInterview(session,
-                                session.getStatus() == InterviewStatus.IN_PROGRESS ? status : session.getStatus())))));
+                        .flatMap(session -> {
+                            if (session.getStatus() == InterviewStatus.IN_PROGRESS
+                                    && status == InterviewStatus.COMPLETED && session.getCurrentQuestion() != null) {
+                                return Mono.error(new InterviewNotFinishedException());
+                            }
+                            return finishInterview(session,
+                                    session.getStatus() == InterviewStatus.IN_PROGRESS ? status : session.getStatus());
+                        }))));
     }
 
     private Mono<FollowQuestionAiResponse> createFollowQuestionIfRequired(
@@ -310,17 +317,15 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
         return redisTemplate.opsForValue().set(createKey(session.getSessionId()), session)
                 .filter(Boolean.TRUE::equals)
                 .switchIfEmpty(Mono.error(new IllegalStateException("최종 면접 기록 보존 실패")))
+                .doOnNext(ignored -> ttsScheduler.cancelSession(session.getSessionId()))
                 .then(Mono.defer(() -> resultDelivery.submit(ChatInterviewAllRequest.from(session))))
-                .flatMap(response -> {
-                    ttsScheduler.cancelSession(session.getSessionId());
-                    return deleteSession(session.getSessionId())
-                            .onErrorResume(error -> {
-                                log.warn("종료 세션 정리 실패 sessionId={}, type={}",
-                                        session.getSessionId(), error.getClass().getSimpleName());
-                                return Mono.empty();
-                            })
-                            .thenReturn(response);
-                });
+                .flatMap(response -> deleteSession(session.getSessionId())
+                        .onErrorResume(error -> {
+                            log.warn("종료 세션 정리 실패 sessionId={}, type={}",
+                                    session.getSessionId(), error.getClass().getSimpleName());
+                            return Mono.empty();
+                        })
+                        .thenReturn(response));
     }
 
     private Mono<ChatInterviewSession> getSession(String sessionId) {
