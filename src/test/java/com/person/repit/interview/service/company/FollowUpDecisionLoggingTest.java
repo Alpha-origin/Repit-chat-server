@@ -81,6 +81,40 @@ class FollowUpDecisionLoggingTest {
         }
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {"timeout", "empty", "invalid"})
+    void 기업_폴백을_생성_성공으로_기록하지_않는다(String failure) {
+        try (var logs = new CapturedLogs()) {
+            var h = harness(enabled(), index -> index == 0 ? Mono.just(response(BASE)) : switch (failure) {
+                case "timeout" -> Mono.error(new TimeoutException());
+                case "empty" -> Mono.just(ClientResponse.create(HttpStatus.OK).build());
+                default -> Mono.just(response("invalid"));
+            });
+            assertThat(h.client().decideFollowQuestion(request("기업")).block().getContent())
+                    .isEqualTo("일반 질문?");
+            String reason = switch (failure) {
+                case "timeout" -> "company_timeout";
+                case "empty" -> "company_empty_response";
+                default -> "company_generation_failed";
+            };
+            assertThat(logs.lines()).anySatisfy(line -> assertThat(line)
+                    .contains("follow_up.decision status=fallback", "reason=" + reason));
+            assertThat(logs.lines()).noneMatch(line -> line.contains("follow_up.decision status=completed"));
+        }
+    }
+
+    @Test
+    void 기업_재작성_성공만_생성_성공으로_기록한다() {
+        try (var logs = new CapturedLogs()) {
+            var h = harness(enabled(), index -> Mono.just(response(index == 0 ? BASE : COMPANY)));
+            assertThat(h.client().decideFollowQuestion(request("기업")).block().getContent())
+                    .isEqualTo("기업 관점 질문?");
+            assertThat(logs.lines()).anySatisfy(line -> assertThat(line)
+                    .contains("follow_up.decision status=completed reason=generated"));
+            assertThat(logs.lines()).noneMatch(line -> line.contains("status=fallback"));
+        }
+    }
+
     private static final class CapturedLogs implements AutoCloseable {
         private final Logger logger = (Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
         private final ListAppender<ILoggingEvent> appender = new ListAppender<>();
