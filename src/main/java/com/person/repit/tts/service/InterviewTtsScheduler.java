@@ -161,10 +161,12 @@ public class InterviewTtsScheduler {
         generating.setUpdatedAt(Instant.now());
 
         stateRepository.save(generating)
-                .then(synthesize(job))
-                .flatMap(bytes -> upload(job, bytes))
+                .then(Mono.defer(() -> synthesize(job)))
+                .flatMap(bytes -> Mono.defer(() -> job.isCancelled()
+                        ? Mono.empty() : upload(job, bytes)))
                 .flatMap(stored -> completeReady(job, generating, stored))
                 .onErrorResume(error -> completeFailed(job, generating, error))
+                .takeUntilOther(job.getCancellation().asMono())
                 .doFinally(ignored -> finish(job))
                 .subscribe();
     }

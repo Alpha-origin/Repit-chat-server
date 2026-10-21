@@ -11,6 +11,7 @@ public class TtsJob implements Comparable<TtsJob> {
     private final long sequence;
     private final TtsInput input;
     private final Sinks.One<AudioState> sink = Sinks.one();
+    private final Sinks.Empty<Void> cancellation = Sinks.empty();
     private volatile int priority;
     private volatile boolean cancelled;
 
@@ -40,6 +41,8 @@ public class TtsJob implements Comparable<TtsJob> {
 
     public void cancel() {
         cancelled = true;
+        cancellation.tryEmitEmpty();
+        sink.tryEmitEmpty();
     }
 
     @Override
