@@ -170,6 +170,11 @@ function prepareInterview(sessionId) {
         interviewId: __VU * 1000000 + __ITER,
         userId: __VU,
         status: 'IN_PROGRESS',
+        mode: 'SOLO',
+        personality: 'FRIENDLY',
+        tone: 'GENTLE',
+        major: 'BACKEND',
+        level: 'NORMAL',
         questions: [
             {
                 id: 1,
