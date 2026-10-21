@@ -2,7 +2,7 @@ services:
   redis-loadtest:
     image: redis:7-alpine
     ports:
-      - "6380:6379"
+      - "127.0.0.1:6380:6379"
 
   wiremock:
     image: wiremock/wiremock:3.13.2
