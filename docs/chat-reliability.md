@@ -51,6 +51,10 @@ BLOCKED 작업은 토큰 또는 payload 계약의 원인을 해결한 뒤 기존
 ## Redis 영속성 및 배포
 
 compose의 Redis는 named volume과 AOF, `appendfsync always`, `noeviction`을 사용한다.
+호스트 포트는 `127.0.0.1:6379`에만 열어 같은 호스트의 로컬 실행에서 접속할 수 있다.
+`docker compose up -d redis` 후 기본 프로필로 실행하면 `localhost:6379`를 사용한다.
+Compose의 Chat 컨테이너에서 같은 Redis를 사용할 때는 `.env`에 `REDIS_HOST=redis`,
+`REDIS_PORT=6379`를 지정한다. 컨테이너의 `localhost`는 Redis 컨테이너를 가리키지 않는다.
 기존 컨테이너에 볼륨 없이 저장된 데이터를 사용 중이라면 교체 전에 백업·이관해야 한다.
 `REDIS_HOST`가 외부 Redis를 가리키면 compose의 설정이 적용되지 않으므로 외부 Redis에도
 동등한 디스크 영속성·퇴거 방지 설정과 백업이 필요하다.

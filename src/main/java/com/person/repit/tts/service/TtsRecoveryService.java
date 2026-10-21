@@ -1,5 +1,6 @@
 package com.person.repit.tts.service;
 
+import com.person.repit.common.exception.AlreadyUsingException;
 import com.person.repit.interview.domain.ChatInterviewSession;
 import com.person.repit.interview.domain.ChatQuestion;
 import com.person.repit.interview.domain.PersonaSnapshot;
@@ -15,6 +16,9 @@ import org.springframework.context.event.EventListener;
 import org.springframework.data.redis.core.ReactiveRedisTemplate;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
+import reactor.util.retry.Retry;
+
+import java.time.Duration;
 
 @Slf4j
 @Component
@@ -32,6 +36,8 @@ public class TtsRecoveryService {
     public void recover() {
         stateRepository.findRecoverable()
                 .concatMap(state -> recoverState(state)
+                        .retryWhen(Retry.fixedDelay(Long.MAX_VALUE, Duration.ofSeconds(1))
+                                .filter(AlreadyUsingException.class::isInstance))
                         .onErrorResume(error -> {
                             log.warn("TTS 작업 복구 실패", error);
                             return Mono.empty();
