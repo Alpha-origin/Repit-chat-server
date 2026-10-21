@@ -3,7 +3,9 @@ package com.person.repit.tts.service;
 import com.person.repit.interview.domain.ChatInterviewSession;
 import com.person.repit.interview.domain.ChatQuestion;
 import com.person.repit.interview.domain.PersonaSnapshot;
+import com.person.repit.interview.service.InterviewOperationLock;
 import com.person.repit.interview.type.InterviewRole;
+import com.person.repit.interview.type.InterviewStatus;
 import com.person.repit.tts.domain.AudioState;
 import com.person.repit.tts.domain.TtsProfile;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +26,7 @@ public class TtsRecoveryService {
     private final AudioStateRepository stateRepository;
     private final InterviewTtsScheduler scheduler;
     private final PersonaTtsProfileResolver profileResolver;
+    private final InterviewOperationLock operationLock;
 
     @EventListener(ApplicationReadyEvent.class)
     public void recover() {
@@ -34,13 +37,15 @@ public class TtsRecoveryService {
     }
 
     private Mono<Void> recoverState(AudioState state) {
-        return redisTemplate.opsForValue().get(SESSION_KEY_PREFIX + state.getSessionId())
+        return operationLock.execute(state.getSessionId(), () ->
+                redisTemplate.opsForValue().get(SESSION_KEY_PREFIX + state.getSessionId())
                 .ofType(ChatInterviewSession.class)
+                .filter(session -> session.getStatus() == InterviewStatus.IN_PROGRESS)
                 .flatMap(session -> recoverQuestion(session, state).thenReturn(true))
                 .defaultIfEmpty(false)
                 .flatMap(recovered -> recovered
                         ? Mono.empty()
-                        : stateRepository.delete(state.getSessionId(), state.getQuestionId()));
+                        : stateRepository.delete(state.getSessionId(), state.getQuestionId())));
     }
 
     private Mono<Void> recoverQuestion(ChatInterviewSession session, AudioState state) {
@@ -54,7 +59,7 @@ public class TtsRecoveryService {
         TtsProfile profile = profileFor(session, question.getAskedByPersonaId());
         int order = session.getQuestions().indexOf(question);
         return stateRepository.delete(state.getSessionId(), state.getQuestionId())
-                .then(scheduler.register(session.getSessionId(), question, profile, 1, order))
+                .then(Mono.defer(() -> scheduler.register(session.getSessionId(), question, profile, 1, order)))
                 .then();
     }
 
