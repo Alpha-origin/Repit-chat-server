@@ -31,8 +31,11 @@ public class TtsRecoveryService {
     @EventListener(ApplicationReadyEvent.class)
     public void recover() {
         stateRepository.findRecoverable()
-                .flatMap(this::recoverState)
-                .onErrorContinue((error, ignored) -> log.warn("TTS 작업 복구 실패", error))
+                .concatMap(state -> recoverState(state)
+                        .onErrorResume(error -> {
+                            log.warn("TTS 작업 복구 실패", error);
+                            return Mono.empty();
+                        }))
                 .subscribe();
     }
 
