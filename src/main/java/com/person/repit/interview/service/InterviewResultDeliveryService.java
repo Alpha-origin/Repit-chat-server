@@ -4,6 +4,7 @@ import com.person.repit.interview.domain.InterviewResultDelivery;
 import com.person.repit.interview.dto.request.ChatInterviewAllRequest;
 import com.person.repit.interview.dto.response.ChatProgressResponse;
 import com.person.repit.interview.exception.ApiServerResponseException;
+import com.person.repit.interview.exception.InterviewSessionAlreadyExistsException;
 import com.person.repit.interview.type.InterviewStatus;
 import io.micrometer.core.instrument.MeterRegistry;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +22,13 @@ public class InterviewResultDeliveryService {
     private final ApiServerClient client;
     private final InterviewResultRetryPolicy policy;
     private final MeterRegistry meters;
+
+    public Mono<Void> ensureNotFinalized(String sessionId) {
+        return outbox.find(sessionId)
+                .flatMap(item -> Mono.<Void>error(new InterviewSessionAlreadyExistsException(
+                        "이미 종료 기록이 등록된 면접 세션입니다.")))
+                .then();
+    }
 
     public Mono<ChatProgressResponse> resume(String sessionId) {
         return outbox.find(sessionId).flatMap(this::requireTerminalStatus).flatMap(item ->

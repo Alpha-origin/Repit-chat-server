@@ -38,8 +38,13 @@ class ChatInterviewIdentityTest {
     @BeforeEach
     void setUp() {
         when(redis.opsForValue()).thenReturn(values);
-        service = new ChatInterviewServiceImpl(ai, redis, mock(InterviewResultDeliveryService.class),
-                mock(InterviewOperationLock.class), new RepitMetrics(new SimpleMeterRegistry()),
+        var delivery = mock(InterviewResultDeliveryService.class);
+        when(delivery.ensureNotFinalized(anyString())).thenReturn(Mono.empty());
+        var lock = mock(InterviewOperationLock.class);
+        when(lock.execute(anyString(), any())).thenAnswer(call ->
+                ((java.util.function.Supplier<Mono<?>>) call.getArgument(1)).get());
+        service = new ChatInterviewServiceImpl(ai, redis, delivery,
+                lock, new RepitMetrics(new SimpleMeterRegistry()),
                 mock(PersonaTtsProfileResolver.class), tts);
     }
 

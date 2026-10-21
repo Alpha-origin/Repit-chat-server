@@ -67,6 +67,11 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
 
     @Override
     public Mono<ChatInterviewResponse> prepareInterview(ChatInterviewPrepareRequest request) {
+        return operationLock.execute(request.getSessionId(), () ->
+                resultDelivery.ensureNotFinalized(request.getSessionId()).then(prepareOnce(request)));
+    }
+
+    private Mono<ChatInterviewResponse> prepareOnce(ChatInterviewPrepareRequest request) {
         return Mono.defer(() -> {
             validateQuestionIds(request);
             validatePersonas(request);
