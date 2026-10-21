@@ -67,7 +67,15 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
 
     @Override
     public Mono<ChatInterviewResponse> prepareInterview(ChatInterviewPrepareRequest request) {
+        return operationLock.execute(request.getSessionId(), () ->
+                resultDelivery.ensureNotFinalized(request.getSessionId()).then(prepareOnce(request)));
+    }
+
+    private Mono<ChatInterviewResponse> prepareOnce(ChatInterviewPrepareRequest request) {
         return Mono.defer(() -> {
+            if (request.getStatus() != InterviewStatus.IN_PROGRESS) {
+                return Mono.error(new InvalidRequestException("새 면접은 진행 중 상태로만 준비할 수 있습니다."));
+            }
             validateQuestionIds(request);
             validatePersonas(request);
             log.debug("sessionId={}, interviewId={}", request.getSessionId(), request.getInterviewId());
@@ -111,7 +119,7 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
                     .ttsProfileVersion(profiles == null || profiles.isEmpty()
                             ? null
                             : profiles.values().iterator().next().getProfileVersion())
-                    .status(request.getStatus())
+                    .status(InterviewStatus.IN_PROGRESS)
                     .questions(new ArrayList<>(questions))
                     .answers(new ArrayList<>())
                     .currentQuestionIndex(0)
@@ -180,7 +188,17 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
             if (currentQuestion == null) {
                 return finishInterview(session, InterviewStatus.COMPLETED);
             }
+            ChatAnswer previous = session.getAnswers().stream()
+                    .filter(item -> item.getQuestionId().equals(request.getQuestionId()))
+                    .findFirst().orElse(null);
+            if (previous != null && (!Objects.equals(previous.getContent(), request.getContent())
+                    || !Objects.equals(previous.getResponseTime(), request.getResponseTime()))) {
+                return Mono.error(new InvalidRequestException("이미 접수한 답변과 다릅니다."));
+            }
             if (!currentQuestion.getQuestionId().equals(request.getQuestionId())) {
+                if (previous != null) {
+                    return Mono.just(ChatProgressResponse.next(currentQuestion));
+                }
                 return Mono.error(new InterviewQuestionMismatchException(
                         "현재 질문과 요청한 질문이 일치하지 않습니다."
                 ));
@@ -195,14 +213,8 @@ public class ChatInterviewServiceImpl implements ChatInterviewService {
                     .createdAt(LocalDateTime.now())
                     .build();
 
-            ChatAnswer previous = session.getAnswers().stream()
-                    .filter(item -> item.getQuestionId().equals(request.getQuestionId()))
-                    .findFirst().orElse(null);
             if (previous == null) {
                 session.getAnswers().add(answer);
-            } else if (!java.util.Objects.equals(previous.getContent(), request.getContent())
-                    || !java.util.Objects.equals(previous.getResponseTime(), request.getResponseTime())) {
-                return Mono.error(new InvalidRequestException("이미 접수한 답변과 다릅니다."));
             }
             log.info(
                     "[ANSWER ACCEPTED] sessionId={}, interviewId={}, questionId={}",

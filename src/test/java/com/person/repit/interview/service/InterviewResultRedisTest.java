@@ -286,6 +286,61 @@ class InterviewResultRedisTest {
         }
     }
 
+    @ParameterizedTest
+    @EnumSource(value = InterviewStatus.class, names = {"COMPLETED", "ABANDONED"})
+    void 종료전송과_준비요청이_경합해도_같은_세션을_재생성하지_않는다(InterviewStatus status) {
+        var objects = new RedisConfig().reactiveRedisTemplate(factory);
+        var active = session();
+        active.setStatus(InterviewStatus.IN_PROGRESS);
+        active.setCurrentQuestionIndex(-1);
+        objects.opsForValue().set("chat:interview:s", active).block();
+        var called = reactor.core.publisher.Sinks.<Void>empty();
+        var accepted = reactor.core.publisher.Sinks.<Void>empty();
+        var client = mock(ApiServerClient.class);
+        when(client.saveInterviewPayload(anyString())).thenReturn(Mono.defer(() -> {
+            called.tryEmitEmpty();
+            return accepted.asMono();
+        }));
+        var meters = new io.micrometer.core.instrument.simple.SimpleMeterRegistry();
+        var delivery = new InterviewResultDeliveryService(outbox, client, new InterviewResultRetryPolicy(), meters);
+        var tts = mock(InterviewTtsScheduler.class);
+        var service = new com.person.repit.interview.service.impl.ChatInterviewServiceImpl(
+                mock(AiQuestionClient.class), objects, delivery, lock,
+                new com.person.repit.common.metrics.RepitMetrics(meters),
+                mock(com.person.repit.tts.service.PersonaTtsProfileResolver.class), tts);
+        var request = new com.person.repit.interview.dto.request.ChatInterviewPrepareRequest();
+        request.setSessionId("s");
+        request.setInterviewId(1L);
+        request.setUserId(2L);
+        request.setStatus(InterviewStatus.IN_PROGRESS);
+        request.setMode(com.person.repit.interview.type.InterviewMode.SOLO);
+        var question = new com.person.repit.interview.dto.request.ChatInterviewPrepareRequest.Question();
+        question.setId(17L);
+        question.setPersonaId(1L);
+        question.setQuestion("질문");
+        request.setQuestions(List.of(question));
+        var closing = (status == InterviewStatus.COMPLETED
+                ? service.completeInterview("s") : service.quitInterview("s")).toFuture();
+        try {
+            called.asMono().block(Duration.ofSeconds(5));
+            StepVerifier.create(service.prepareInterview(request)).expectError(AlreadyUsingException.class)
+                    .verify(Duration.ofSeconds(5));
+            accepted.tryEmitEmpty();
+            assertThat(closing.orTimeout(5, java.util.concurrent.TimeUnit.SECONDS).join().getStatus()).isEqualTo(status);
+            String receipt = redis.opsForValue().get("chat:interview:result:s").block();
+            StepVerifier.create(service.prepareInterview(request))
+                    .expectError(com.person.repit.interview.exception.InterviewSessionAlreadyExistsException.class)
+                    .verify(Duration.ofSeconds(5));
+            assertThat(objects.hasKey("chat:interview:s").block()).isFalse();
+            assertThat(redis.opsForValue().get("chat:interview:result:s").block()).isEqualTo(receipt);
+            verify(tts).cancelSession("s");
+            verifyNoMoreInteractions(tts);
+        } finally {
+            accepted.tryEmitEmpty();
+            closing.cancel(true);
+        }
+    }
+
     private ChatInterviewSession session() {
         return ChatInterviewSession.builder().sessionId("s").interviewId(1L).userId(2L)
                 .status(InterviewStatus.COMPLETED).createdAt(LocalDateTime.of(2026, 10, 15, 10, 0))

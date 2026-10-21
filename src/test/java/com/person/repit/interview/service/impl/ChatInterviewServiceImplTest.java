@@ -81,6 +81,7 @@ class ChatInterviewServiceImplTest {
                 ((java.util.function.Supplier<Mono<?>>) invocation.getArgument(1)).get());
         InterviewResultDeliveryService delivery = mock(InterviewResultDeliveryService.class);
         when(delivery.resume(anyString())).thenReturn(Mono.empty());
+        when(delivery.ensureNotFinalized(anyString())).thenReturn(Mono.empty());
         service = new ChatInterviewServiceImpl(
                 aiQuestionClient,
                 redisTemplate,
