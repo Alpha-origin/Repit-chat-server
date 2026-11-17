@@ -52,6 +52,9 @@ class RequestRateLimitFilterTest {
             "POST, /chat/interviews/s/complete, write, 10, 10",
             "POST, /chat/interviews/s/quit, write, 10, 10",
             "GET, /chat/interviews/s/questions/1/audio?wait=20, audio, 30, 10",
+            "HEAD, /chat/interviews/s, read, 30, 10",
+            "HEAD, /chat/interviews/s/question, read, 30, 10",
+            "HEAD, /chat/interviews/s/questions/1/audio?wait=20, audio, 30, 10",
             "GET, /ws/chat/interviews?sessionId=s, ws-connect, 10, 10"
     })
     void 대상_요청은_정책별로_접속_IP를_제한한다(
