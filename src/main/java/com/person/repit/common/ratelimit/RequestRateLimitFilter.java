@@ -84,7 +84,7 @@ public class RequestRateLimitFilter implements WebFilter {
                 return WRITE_POLICY;
             }
         }
-        if (HttpMethod.GET.equals(method)) {
+        if (HttpMethod.GET.equals(method) || HttpMethod.HEAD.equals(method)) {
             if (AUDIO.matches(path)) {
                 return AUDIO_POLICY;
             }
