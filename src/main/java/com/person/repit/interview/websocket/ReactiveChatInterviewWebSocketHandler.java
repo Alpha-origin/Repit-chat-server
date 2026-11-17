@@ -3,6 +3,7 @@ package com.person.repit.interview.websocket;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.person.repit.common.metrics.RepitMetrics;
+import com.person.repit.common.ratelimit.RequestRateLimiter;
 import com.person.repit.common.type.MessageType;
 import com.person.repit.interview.dto.request.ChatAnswerRequest;
 import com.person.repit.interview.dto.request.ChatWebSocketAnswerMessageRequest;
@@ -22,6 +23,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.net.URI;
+import java.time.Duration;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -34,6 +36,7 @@ public class ReactiveChatInterviewWebSocketHandler implements WebSocketHandler {
     private final ObjectMapper objectMapper;
     private final ChatInterviewService chatInterviewService;
     private final RepitMetrics metrics;
+    private final RequestRateLimiter rateLimiter;
 
     @Override
     public Mono<Void> handle(WebSocketSession session) {
@@ -78,8 +81,29 @@ public class ReactiveChatInterviewWebSocketHandler implements WebSocketHandler {
                 .onErrorResume(exception -> Mono.just(error(messageOf(exception), CloseStatus.BAD_DATA)));
 
         Flux<OutboundMessage> responses = session.receive()
-                .concatMap(message -> processMessage(sessionId, message.getPayloadAsText()))
-                .onErrorResume(exception -> Mono.just(error(messageOf(exception), CloseStatus.SERVER_ERROR)));
+                .concatMap(message -> {
+                    String payload = message.getPayloadAsText();
+
+                    return rateLimiter.allow(
+                            "ws-message:" + sessionId,
+                            10,
+                            Duration.ofSeconds(10)
+                    ).flatMap(allowed -> {
+                        if (!allowed) {
+                            return Mono.just(error(
+                                    "요청이 너무 많습니다. 잠시 후 다시 연결해주세요.",
+                                    CloseStatus.POLICY_VIOLATION
+                            ));
+                        }
+
+                        return processMessage(sessionId, payload);
+                    });
+                }, 1)
+                .onErrorResume(exception ->
+                        Mono.just(error(
+                                "메시지 처리에 실패했습니다.",
+                                CloseStatus.SERVER_ERROR
+                        )));
 
         return Flux.concat(initialQuestion, responses);
     }
