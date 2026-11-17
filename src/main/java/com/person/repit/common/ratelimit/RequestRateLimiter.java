@@ -29,6 +29,16 @@ public class RequestRateLimiter {
             int limit,
             Duration window
     ) {
+
+        if (bucket == null || bucket.isBlank()
+                || limit <= 0
+                || window == null
+                || window.toMillis() <= 0) {
+            return Mono.error(new IllegalArgumentException(
+                    "bucket, limit, window 설정이 올바르지 않습니다."
+            ));
+        }
+
         return redis.execute(
                         COUNT,
                         List.of("repit:rate:" + bucket),
