@@ -43,7 +43,11 @@ public class ReactiveWebSocketConfig {
 
     private CorsConfiguration webSocketCorsConfiguration() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(List.of("*"));
+        configuration.setAllowedOrigins(List.of(
+                "http://localhost:5173",
+                "https://repit-web-psi.vercel.app",
+                "https://team-alpha.org"
+        ));
         configuration.setAllowedMethods(List.of("GET"));
         configuration.setAllowedHeaders(List.of("*"));
         return configuration;
