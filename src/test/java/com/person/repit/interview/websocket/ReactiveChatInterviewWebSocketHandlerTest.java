@@ -2,6 +2,7 @@ package com.person.repit.interview.websocket;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.person.repit.common.metrics.RepitMetrics;
+import com.person.repit.common.ratelimit.RequestRateLimiter;
 import com.person.repit.interview.domain.ChatQuestion;
 import com.person.repit.interview.dto.request.ChatAnswerRequest;
 import com.person.repit.interview.dto.response.ChatProgressResponse;
@@ -27,6 +28,7 @@ import reactor.test.StepVerifier;
 
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -38,6 +40,7 @@ import static org.mockito.Mockito.*;
 
 class ReactiveChatInterviewWebSocketHandlerTest {
     private ChatInterviewService service;
+    private RequestRateLimiter rateLimiter;
     private WebSocketSession session;
     private ReactiveChatInterviewWebSocketHandler handler;
     private final List<String> outbound = new ArrayList<>();
@@ -47,8 +50,11 @@ class ReactiveChatInterviewWebSocketHandlerTest {
     void setUp() {
         service = mock(ChatInterviewService.class);
         session = mock(WebSocketSession.class);
+        rateLimiter = mock(RequestRateLimiter.class);
+        when(rateLimiter.allow("ws-message:s", 10, Duration.ofSeconds(10)))
+                .thenReturn(Mono.just(true));
         handler = new ReactiveChatInterviewWebSocketHandler(
-                new ObjectMapper(), service, new RepitMetrics(new SimpleMeterRegistry()));
+                new ObjectMapper(), service, new RepitMetrics(new SimpleMeterRegistry()), rateLimiter);
         when(session.getHandshakeInfo()).thenReturn(new HandshakeInfo(
                 URI.create("ws://localhost/chat?sessionId=s"), new HttpHeaders(), Mono.empty(), null));
         when(service.getCurrentQuestion("s")).thenReturn(Mono.just(
@@ -163,6 +169,36 @@ class ReactiveChatInterviewWebSocketHandlerTest {
         assertThat(outbound).hasSize(1);
         verify(service, never()).completeInterview(anyString());
         verify(service, never()).quitInterview(anyString());
+    }
+
+    @Test
+    void 요청_제한을_초과하면_답변을_처리하지_않고_연결을_닫는다() {
+        when(rateLimiter.allow("ws-message:s", 10, Duration.ofSeconds(10)))
+                .thenReturn(Mono.just(false));
+        when(session.receive()).thenReturn(Flux.just(textMessage(answer(1)), textMessage(answer(2))));
+
+        StepVerifier.create(handler.handle(session)).verifyComplete();
+
+        assertThat(outbound).hasSize(2);
+        assertThat(outbound.get(1)).contains("\"type\":\"ERROR\"", "요청이 너무 많습니다.");
+        verify(service, never()).submitAnswer(anyString(), any());
+        verify(rateLimiter).allow("ws-message:s", 10, Duration.ofSeconds(10));
+        verify(session).close(CloseStatus.POLICY_VIOLATION);
+    }
+
+    @Test
+    void 요청_제한_저장소_장애는_답변을_실행하지_않고_연결을_닫는다() {
+        when(rateLimiter.allow("ws-message:s", 10, Duration.ofSeconds(10)))
+                .thenReturn(Mono.error(new IllegalStateException("internal redis details")));
+        when(session.receive()).thenReturn(Flux.just(textMessage(answer(1))));
+
+        StepVerifier.create(handler.handle(session)).verifyComplete();
+
+        assertThat(outbound).hasSize(2);
+        assertThat(outbound.get(1)).contains("메시지 처리에 실패했습니다.")
+                .doesNotContain("internal redis details");
+        verify(service, never()).submitAnswer(anyString(), any());
+        verify(session).close(CloseStatus.SERVER_ERROR);
     }
 
     private String answer(int responseTime) {
